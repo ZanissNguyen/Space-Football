@@ -1,0 +1,205 @@
+#include "gameplay.h"
+
+void Team::set_members(std::vector<Player*> players)
+{
+    for (int i = 0; i<players.size(); i++)
+        members.push_back(players[i]);
+}
+
+void Team::set_team(TEAM_CODE t)
+{
+    code = t;
+}
+
+// ---------------- Gameplay ----------------
+void Gameplay::process(float delay) {
+    // TODO: implement collision and gameplay processing
+    // is there have time remaining?
+    Uint64 now = SDL_GetTicks64();
+    if (now - start_time >= GAME_TIME)
+    {
+
+    }
+
+    // moving
+    for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+    {
+        red.members[i]->move(delay);
+        blue.members[i]->move(delay);
+    }
+
+    // AI moving
+
+    // checking goal
+    if (is_ball_in_goal(&ball, &red.score, &blue.score))
+    {
+        printf("Goal! Score (Red - Blue): (%d, %d)", red.score, blue.score);
+        new_play();
+    }
+
+    // collision process
+    // players collision
+    // red vs blue
+    if (is_player_collision(red.members[0], red.members[1]))
+    {
+        process_player_collision(red.members[0], red.members[1]);
+    }
+    if (is_player_collision(blue.members[0], blue.members[1]))
+    {
+        process_player_collision(blue.members[0], blue.members[1]);
+    }
+
+    for (int i = 0; i<red.members.size(); i++)
+    {
+        for (int j = 0; j<blue.members.size(); j++)
+        {
+            if (is_player_collision(red.members[i], blue.members[j]))
+            {
+                process_player_collision(red.members[i], blue.members[j]);
+            }
+        }
+    }
+
+    for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+    {
+        if (is_player_shoot(red.members[i], &ball))
+        {
+            // printf("red hit ball");
+            process_shoot_collision(red.members[i], &ball);
+        }
+        if (is_player_shoot(blue.members[i], &ball))
+        {
+            // printf("blue hit ball");
+            process_shoot_collision(blue.members[i], &ball);
+        }
+    }
+    ball.move(delay);
+}
+
+void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::vector<Player*> blue_members)
+{
+    // TODO: set team member run new_play
+    map = init_map;
+    // setup members
+    red.set_team(RED);
+    red.set_members(red_members);
+    blue.set_team(BLUE);
+    blue.set_members(blue_members);
+    start_time = SDL_GetTicks64();
+    ball.setRadius(BALL_SIZE/2);
+
+    // printf("assign complete!");
+    new_play();
+    // printf("init completeeeeee");
+}
+
+void Gameplay::new_play() 
+{
+    int field_width = SCREEN_WIDTH;
+    int field_height = SCREEN_HEIGHT - 120;
+
+    // TODO: place players into position and reset ball
+    // printf("start new play!");
+    if (red.members.size()==2)
+    {
+        // printf("yes1");
+        red.members[0]->place(field_width/3, 120+field_height/3);
+        red.members[1]->place(field_width/3, 120+2*field_height/3);
+    }
+    
+    if (blue.members.size()==2)
+    {
+        // printf("yes2");
+        blue.members[0]->place(2*field_width/3, 120+field_height/3);
+        blue.members[1]->place(2*field_width/3, 120+2*field_height/3);
+    }
+    
+    // printf("stated");
+    ball.place(field_width/2, 120+field_height/2);
+}
+
+void Gameplay::rematch() {
+    // TODO: reset everything for a new match
+}
+
+// ---------------- Collision Functions ----------------
+void process_player_collision(Player* player1, Player* player2) {
+    // TODO: handle player vs player collision
+    SDL_Rect p1Rect = player1->rect;
+    SDL_Rect p2Rect = player2->rect;
+    int space = 0;
+    if (SDL_HasIntersection(&p1Rect, &p2Rect)) {
+        // Đảm bảo bóng không đi xuyên người: dịch bóng ra ngoài cầu thủ
+        // need redefine
+        if (p1Rect.x < p2Rect.x) player1->change_x(p2Rect.x - PLAYER_SIZE/2 - space);
+        else if (p1Rect.x > p2Rect.x) player1->change_x(p2Rect.x + PLAYER_SIZE*3/2 + space);
+        if (p1Rect.y < p2Rect.y) player1->change_y(p2Rect.y - PLAYER_SIZE/2 - space);
+        else if (p1Rect.y > p2Rect.y) player1->change_y(p2Rect.y + PLAYER_SIZE*3/2 + space);
+        // need redefine
+        player1->velocity.x *=-0.2;
+        player1->velocity.y *=-0.2;
+        player2->velocity.x *=-0.2;
+        player2->velocity.y *=-0.2;
+    }
+}
+
+bool is_player_collision(Player* player1, Player* player2) {
+    // TODO: return true if players collide
+    SDL_Rect p1Rect = player1->rect;
+    SDL_Rect p2Rect = player2->rect;
+    return SDL_HasIntersection(&p1Rect, &p2Rect);
+}
+
+void process_shoot_collision(Player* player, Ball* ball) {
+    // TODO: handle player shooting ball
+    // for (auto* p : red_team) {
+    SDL_Rect pRect = player->rect;
+    SDL_Rect bRect = ball->display_rect;
+    int space = 0;
+    if (SDL_HasIntersection(&pRect, &bRect)) {
+        // Đảm bảo bóng không đi xuyên người: dịch bóng ra ngoài cầu thủ
+        // need redefine
+        if (bRect.x < pRect.x) ball->change_x(pRect.x - ball->radius + space);
+        else if (bRect.x > pRect.x) ball->change_x(pRect.x + PLAYER_SIZE + ball->radius + space);
+        if (bRect.y < pRect.y) ball->change_y(pRect.y - ball->radius + space);
+        else if (bRect.y > pRect.y) ball->change_y(pRect.y + PLAYER_SIZE + ball->radius + space);
+        // need redefine
+        float dx = bRect.x - pRect.x;
+        float dy = bRect.y - pRect.y;
+        float mag = std::sqrt(dx*dx + dy*dy);
+        if (mag > 0) {
+            ball->velocity.x = player->velocity.x*3;
+            ball->velocity.y = player->velocity.y*3;
+        } else {
+            ball->velocity.x = -player->velocity.x*3;
+            ball->velocity.y = player->velocity.x*3;
+        }
+        ball->last_touch = player->team;
+    }
+}
+
+bool is_player_shoot(Player* player, Ball* ball) {
+    // TODO: return true if player shoots ball
+    SDL_Rect pRect = player->rect;
+    SDL_Rect bRect = ball->display_rect;
+    return SDL_HasIntersection(&pRect, &bRect);
+}
+
+bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
+    // TODO: check if ball is inside goal
+    int field_width = SCREEN_WIDTH;
+    int field_height = SCREEN_HEIGHT - 120;
+
+    int goal_size = 30;
+    // Khung thành trái: x <= 10, y trong [250,470]
+    if (ball->position.x <= goal_size && 
+        ball->position.y >= field_height/3 && ball->position.y <= 2*field_height/3) {
+        *blue_score+=1; return true;
+    }
+    // Khung thành phải: x+size >= 1270, y trong [250,470]
+    if (ball->position.x >= SCREEN_WIDTH-goal_size && 
+        ball->position.y >= field_height/3 && ball->position.y <= 2*field_height/3) {
+        *red_score+=1; return true;
+    }
+    return false;
+}
