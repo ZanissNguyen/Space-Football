@@ -124,22 +124,83 @@ void Gameplay::rematch() {
 
 // ---------------- Collision Functions ----------------
 void process_player_collision(Player* player1, Player* player2) {
-    // TODO: handle player vs player collision
     SDL_Rect p1Rect = player1->rect;
     SDL_Rect p2Rect = player2->rect;
-    int space = 0;
+
     if (SDL_HasIntersection(&p1Rect, &p2Rect)) {
-        // Đảm bảo bóng không đi xuyên người: dịch bóng ra ngoài cầu thủ
-        // need redefine
-        if (p1Rect.x < p2Rect.x) player1->change_x(p2Rect.x - PLAYER_SIZE/2 - space);
-        else if (p1Rect.x > p2Rect.x) player1->change_x(p2Rect.x + PLAYER_SIZE*3/2 + space);
-        if (p1Rect.y < p2Rect.y) player1->change_y(p2Rect.y - PLAYER_SIZE/2 - space);
-        else if (p1Rect.y > p2Rect.y) player1->change_y(p2Rect.y + PLAYER_SIZE*3/2 + space);
-        // need redefine
-        player1->velocity.x *=-0.2;
-        player1->velocity.y *=-0.2;
-        player2->velocity.x *=-0.2;
-        player2->velocity.y *=-0.2;
+        // // Đảm bảo bóng không đi xuyên người: dịch bóng ra ngoài cầu thủ
+        // // need redefine
+        // if (p1Rect.x < p2Rect.x) player1->change_x(p2Rect.x - PLAYER_SIZE/2 - space);
+        // else if (p1Rect.x > p2Rect.x) player1->change_x(p2Rect.x + PLAYER_SIZE*3/2 + space);
+        // if (p1Rect.y < p2Rect.y) player1->change_y(p2Rect.y - PLAYER_SIZE/2 - space);
+        // else if (p1Rect.y > p2Rect.y) player1->change_y(p2Rect.y + PLAYER_SIZE*3/2 + space);
+        // // need redefine
+        // player1->velocity.x *=-0.2;
+        // player1->velocity.y *=-0.2;
+        // player2->velocity.x *=-0.2;
+        // player2->velocity.y *=-0.2;
+
+        // Calculate distance between player centers
+        float dx = player2->position.x - player1->position.x;
+        float dy = player2->position.y - player1->position.y;
+        float distance = sqrt(dx*dx + dy*dy);
+
+        // Avoid division by zero
+        if (distance < 1.0f) {
+            dx = 1.0f; dy = 0.0f; distance = 1.0f;
+        }
+
+        // Normalize direction vector
+        float nx = dx / distance;
+        float ny = dy / distance;
+
+        // Minimum separation distance (sum of half-widths + small buffer)
+        float min_distance = (PLAYER_SPRITE_WIDTH + PLAYER_SPRITE_HEIGHT) / 2.0f + 2.0f;
+        float overlap = min_distance - distance;
+
+        if (overlap > 0) {
+            // Separate players smoothly based on their toughness
+            float total_toughness = player1->toughness + player2->toughness;
+            float separation_factor = 1.0f; // Increased from 0.5f to prevent phase-through
+
+            if (total_toughness > 0) {
+                float p1_ratio = player2->toughness / total_toughness;
+                float p2_ratio = player1->toughness / total_toughness;
+
+                // Move players apart
+                player1->position.x -= nx * overlap * p1_ratio * separation_factor;
+                player1->position.y -= ny * overlap * p1_ratio * separation_factor;
+                player2->position.x += nx * overlap * p2_ratio * separation_factor;
+                player2->position.y += ny * overlap * p2_ratio * separation_factor;
+
+                // Update rects
+                player1->rect.x = player1->position.x - PLAYER_SPRITE_WIDTH/2;
+                player1->rect.y = player1->position.y - PLAYER_SPRITE_HEIGHT/2;
+                player2->rect.x = player2->position.x - PLAYER_SPRITE_WIDTH/2;
+                player2->rect.y = player2->position.y - PLAYER_SPRITE_HEIGHT/2;
+            }
+
+            // Apply collision response to velocities (bounce effect)
+            float bounce_factor = 0.3f;
+
+            // Calculate relative velocity
+            float rel_vx = player2->velocity.x - player1->velocity.x;
+            float rel_vy = player2->velocity.y - player1->velocity.y;
+
+            // Calculate relative velocity along collision normal
+            float vel_along_normal = rel_vx * nx + rel_vy * ny;
+
+            // Only resolve if objects are moving towards each other
+            if (vel_along_normal > 0) return;
+
+            // Apply collision impulse
+            float impulse = bounce_factor * vel_along_normal;
+
+            player1->velocity.x += impulse * nx;
+            player1->velocity.y += impulse * ny;
+            player2->velocity.x -= impulse * nx;
+            player2->velocity.y -= impulse * ny;
+        }
     }
 }
 

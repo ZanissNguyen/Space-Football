@@ -63,7 +63,10 @@ void Player::place(int init_x, int init_y)
     position = Vec2(init_x, init_y);
     velocity = Vec2(0, 0);
     acceleration = Vec2(0, 0);
-    rect = {init_x-PLAYER_SIZE/2, init_y-PLAYER_SIZE/2, PLAYER_SIZE, PLAYER_SIZE};
+    rect = {init_x-PLAYER_SPRITE_WIDTH/2, init_y-PLAYER_SPRITE_HEIGHT/2, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT};
+    rotation_angle = 0.0;
+    animation_time = 0.0f;
+    is_moving = false;
 }
 
 void Player::move(float dt)
@@ -78,13 +81,23 @@ void Player::move(float dt)
 
     int FRICTION_EARTH = 0.5;
 
+    // Calculate rotation and animation based on velocity
+    if (velocity.x != 0 || velocity.y != 0) {
+        rotation_angle = atan2(velocity.y, velocity.x) * 180.0 / M_PI;
+        is_moving = true;
+        animation_time += dt * 8.0f; // Animation speed multiplier
+    } else {
+        is_moving = false;
+        animation_time = 0.0f; // Reset animation when not moving
+    }
+
     // position process:
-    if (rect.x <=0) { change_x(1+PLAYER_SIZE/2.0); velocity.x = -velocity.x*(1-FRICTION_EARTH); }
-    if (rect.y <=120) { change_y(121+PLAYER_SIZE/2.0); velocity.y = -velocity.y*(1-FRICTION_EARTH); }
-    if (rect.x + PLAYER_SIZE >= SCREEN_WIDTH) 
-        { change_x(SCREEN_WIDTH - PLAYER_SIZE/2.0); velocity.x = -velocity.x*(1-FRICTION_EARTH);}
-    if (rect.y + PLAYER_SIZE >= SCREEN_HEIGHT) 
-        { change_y(SCREEN_HEIGHT - PLAYER_SIZE/2.0); velocity.y = -velocity.y*(1-FRICTION_EARTH);}
+    if (rect.x <=0) { change_x(1+PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-FRICTION_EARTH); }
+    if (rect.y <=120) { change_y(121+PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-FRICTION_EARTH); }
+    if (rect.x + PLAYER_SPRITE_WIDTH >= SCREEN_WIDTH)
+        { change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-FRICTION_EARTH);}
+    if (rect.y + PLAYER_SPRITE_HEIGHT >= SCREEN_HEIGHT)
+        { change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-FRICTION_EARTH);}
 
     // printf("position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 
@@ -94,13 +107,13 @@ void Player::move(float dt)
 void Player::change_x(int init_x)
 {
     position.x = init_x;
-    rect.x = init_x - PLAYER_SIZE/2.0;
+    rect.x = init_x - PLAYER_SPRITE_WIDTH/2.0;
 }
 
 void Player::change_y(int init_y)
 {
     position.y = init_y;
-    rect.y = init_y - PLAYER_SIZE/2.0;
+    rect.y = init_y - PLAYER_SPRITE_HEIGHT/2.0;
 }
 
 void Player::change_position(int init_x, int init_y)

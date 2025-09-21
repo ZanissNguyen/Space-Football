@@ -45,10 +45,15 @@ public:
     Vec2 position;
     Vec2 velocity;
     Vec2 acceleration;
-    
+
     bool is_active;
     SDL_Rect rect;
     TEAM_CODE team;
+    double rotation_angle; // angle in degrees for sprite rotation
+
+    // Animation state
+    float animation_time; // for limb animation timing
+    bool is_moving; // track if player is currently moving
 
     float toughness; // process collision with player
     float ball_control; // how easy to control ball
@@ -59,8 +64,11 @@ public:
         position = Vec2(init_x, init_y);
         velocity = Vec2(0, 0);
         acceleration = Vec2(0, 0);
-        rect = {init_x-PLAYER_SIZE/2, init_y-PLAYER_SIZE/2, PLAYER_SIZE, PLAYER_SIZE};
+        rect = {init_x-PLAYER_SPRITE_WIDTH/2, init_y-PLAYER_SPRITE_HEIGHT/2, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT};
         team = init_team;
+        rotation_angle = 0.0; // Start facing right
+        animation_time = 0.0f;
+        is_moving = false;
     }
 
     void place(int init_x, int init_y);
