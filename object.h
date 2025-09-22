@@ -61,6 +61,8 @@ public:
         acceleration = Vec2(0, 0);
         rect = {init_x-PLAYER_SIZE/2, init_y-PLAYER_SIZE/2, PLAYER_SIZE, PLAYER_SIZE};
         team = init_team;
+
+        toughness = 2;
     }
 
     void place(int init_x, int init_y);
