@@ -13,11 +13,24 @@ public:
     SDL_Rect display_rect;
     Circle circle;
     TEAM_CODE last_touch;
+    double rotation_angle; // angle in degrees for ball rotation
 
-    Ball() 
+    // Simple particle system for comet trail (using separate arrays for safety)
+    static const int MAX_PARTICLES = 8;
+    float particle_x[MAX_PARTICLES];
+    float particle_y[MAX_PARTICLES];
+    float particle_life[MAX_PARTICLES];
+    float particle_spawn_timer;
+
+    Ball()
         : position(Vec2(0,0)), velocity(Vec2(0,0)), radius(0.0f), display_rect({0,0,0,0}),
-        circle(Circle(0,0,0)), last_touch(RED)
-    {}
+        circle(Circle(0,0,0)), last_touch(RED), rotation_angle(0.0), particle_spawn_timer(0.0f)
+    {
+        // Initialize all particles as dead
+        for(int i = 0; i < MAX_PARTICLES; i++) {
+            particle_life[i] = 0.0f;
+        }
+    }
 
     Ball(int init_x, int init_y, float init_radius)
     {
@@ -28,6 +41,13 @@ public:
         display_rect = {(init_x-width/2), (init_y-width/2), width, width};
         circle = Circle(position.x, position.y, radius);
         last_touch = RED;
+        rotation_angle = 0.0;
+        particle_spawn_timer = 0.0f;
+
+        // Initialize all particles as dead
+        for(int i = 0; i < MAX_PARTICLES; i++) {
+            particle_life[i] = 0.0f;
+        }
     }
 
     void setRadius(float r);
@@ -36,6 +56,7 @@ public:
     void change_position(int init_x, int init_y);
     void change_x(int init_x);
     void change_y(int init_y);
+    void updateParticles(float dt, float speed);
 };
 
 // ======================= Player Class ==========================

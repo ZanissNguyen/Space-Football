@@ -9,14 +9,24 @@ void Ball::move(float dt)
     Vec2 new_position = position + velocity * dt;
     change_position(new_position.x, new_position.y);
 
+    // Calculate rotation based on velocity
+    float speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    if (speed > 1.0f) {
+        rotation_angle += speed * dt * 2.0f; // Rotation speed based on ball speed
+        if (rotation_angle > 360.0f) rotation_angle -= 360.0f;
+    }
+
+    // Update particle system for comet trail
+    updateParticles(dt, speed);
+
     int FRICTION_EARTH = 0.5;
 
     // position process:
     if (display_rect.x <=0) { change_x(1+radius); velocity.x = -velocity.x*(1-FRICTION_EARTH); }
     if (display_rect.y <=120) { change_y(121+radius); velocity.y = -velocity.y*(1-FRICTION_EARTH); }
-    if (display_rect.x + radius*2 >= SCREEN_WIDTH) 
+    if (display_rect.x + radius*2 >= SCREEN_WIDTH)
         { change_x(SCREEN_WIDTH - radius); velocity.x = -velocity.x*(1-FRICTION_EARTH);}
-    if (display_rect.y + radius*2 >= SCREEN_HEIGHT) 
+    if (display_rect.y + radius*2 >= SCREEN_HEIGHT)
         { change_y(SCREEN_HEIGHT - radius); velocity.y = -velocity.y*(1-FRICTION_EARTH);}
 
     // printf("Circle: position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
@@ -35,6 +45,13 @@ void Ball::place(int init_x, int init_y)
     display_rect = {(init_x-width/2), (init_y-width/2), width, width};
     circle = Circle(position.x, position.y, radius);
     last_touch = RED;
+    rotation_angle = 0.0;
+    particle_spawn_timer = 0.0f;
+
+    // Clear all particles when ball is placed
+    for(int i = 0; i < MAX_PARTICLES; i++) {
+        particle_life[i] = 0.0f;
+    }
 }
 
 void Ball::change_x(int init_x)
@@ -55,6 +72,43 @@ void Ball::change_position(int init_x, int init_y)
 {
     change_x(init_x);
     change_y(init_y);
+}
+
+void Ball::updateParticles(float dt, float speed)
+{
+    // Safety check
+    if (dt <= 0.0f || dt > 1.0f) return;
+
+    // Update existing particles
+    for(int i = 0; i < MAX_PARTICLES; i++) {
+        if(particle_life[i] > 0.0f) {
+            particle_life[i] -= dt * 3.0f; // Fade out over ~0.33 seconds
+            if(particle_life[i] < 0.0f) particle_life[i] = 0.0f;
+        }
+    }
+
+    // Spawn new particles when ball is moving fast
+    if(speed > 15.0f) { // Add upper bound safety
+        particle_spawn_timer += dt;
+
+        // Spawn particles at ~30 FPS when moving fast
+        if(particle_spawn_timer >= 1.0f/30.0f) {
+            particle_spawn_timer = 0.0f;
+
+            // Find a dead particle to reuse
+            for(int i = 0; i < MAX_PARTICLES; i++) {
+                if(particle_life[i] <= 0.0f) {
+                    // Safety check position values
+                    if(position.x >= 0 && position.x < 10000 && position.y >= 0 && position.y < 10000) {
+                        particle_x[i] = position.x;
+                        particle_y[i] = position.y;
+                        particle_life[i] = 1.0f; // Full life
+                    }
+                    break;
+                }
+            }
+        }
+    }
 }
 
 // ======================= Player Class ==========================

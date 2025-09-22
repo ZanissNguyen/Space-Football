@@ -303,14 +303,58 @@ void draw_field(SDL_Window * window, SDL_Renderer * renderer)
 void draw_ball(Ball* ball, SDL_Window* window, SDL_Renderer* renderer)
 {
     std::ostringstream ospath;
-    ospath << IMAGE_PATH << "ball_earth.bmp";
-    std::string path = ospath.str(); 
-    
+    ospath << IMAGE_PATH << "ball_soccer2.bmp";
+    std::string path = ospath.str();
+
     SDL_Texture * texture = NULL;
     texture = getTexture(window, renderer, path);
 
-    SDL_Rect * rect = &ball->display_rect;
-    SDL_RenderCopy(renderer, texture, NULL, rect);
+    // Enable blending for alpha transparency
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+
+    // Draw trail effect with alpha transparency
+    float speed = sqrt(ball->velocity.x * ball->velocity.x + ball->velocity.y * ball->velocity.y);
+    if (speed > 15.0f) { // Only show trail when moving fast enough
+        // Draw particles as trail effect
+        for(int i = 0; i < ball->MAX_PARTICLES; i++) {
+            if(ball->particle_life[i] > 0.0f) {
+                // Calculate alpha based on particle life (newer = more opaque)
+                Uint8 alpha = (Uint8)(ball->particle_life[i] * 150); // 0.0-1.0 -> 0-150
+                if (alpha < 20) alpha = 20; // Minimum visibility
+
+                SDL_SetTextureAlphaMod(texture, alpha);
+
+                // Calculate particle size based on life (smaller as they fade)
+                float size_factor = ball->particle_life[i] * 0.8f; // 0.0-0.8
+                int particle_size = (int)(ball->display_rect.w * size_factor);
+
+                if (particle_size > 4) { // Only draw if big enough
+                    SDL_Rect particle_rect = {
+                        (int)(ball->particle_x[i] - particle_size/2),
+                        (int)(ball->particle_y[i] - particle_size/2),
+                        particle_size, particle_size
+                    };
+                    SDL_RenderCopy(renderer, texture, NULL, &particle_rect);
+                }
+            }
+        }
+    }
+
+    // Reset alpha for main ball
+    SDL_SetTextureAlphaMod(texture, 255);
+
+    // Make ball bigger (1.2x size as modified)
+    int bigger_size = ball->display_rect.w * 1.2f;
+    SDL_Rect bigger_rect = {
+        ball->display_rect.x - (bigger_size - ball->display_rect.w) / 2,
+        ball->display_rect.y - (bigger_size - ball->display_rect.h) / 2,
+        bigger_size, bigger_size
+    };
+
+    // Draw main ball with rotation
+    SDL_Point center = {bigger_size/2, bigger_size/2};
+    SDL_RenderCopyEx(renderer, texture, NULL, &bigger_rect, ball->rotation_angle, &center, SDL_FLIP_NONE);
+
     SDL_DestroyTexture(texture);
     texture = NULL;
 }
