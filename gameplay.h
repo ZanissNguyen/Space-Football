@@ -30,6 +30,8 @@ public:
     void set_members(std::vector<Player*> players);
 
     void set_team(TEAM_CODE t);
+
+    void change_control();
 };
 
 class Gameplay

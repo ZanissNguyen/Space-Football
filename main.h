@@ -12,6 +12,6 @@ bool library_init();
 void close();
 
 void event_handler_menu(SDL_Event* event);
-void event_handler_playing(SDL_Event* event);
+void event_handler_playing(Gameplay* game, SDL_Event* event);
 void event_handler_pause(SDL_Event * event);
 void event_handler_scoring(SDL_Event * event);

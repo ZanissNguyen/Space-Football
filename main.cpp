@@ -38,7 +38,7 @@ int main(int argc, char* args[])
 
             switch (state) {
                 case MENU:    event_handler_menu(&event); break;
-                case PLAYING: event_handler_playing(&event); break;
+                case PLAYING: event_handler_playing(&game, &event); break;
                 case SCORING: event_handler_scoring(&event); break;
             }
         }
@@ -179,9 +179,24 @@ void event_handler_menu(SDL_Event * event)
 
 }
 
-void event_handler_playing(SDL_Event* event)
+void event_handler_playing(Gameplay * game, SDL_Event* event)
 {
     // Process Smooth Moving
+    if (event->type == SDL_KEYDOWN)
+    {
+        switch( event->key.keysym.sym )
+        {
+            case SDLK_f:
+                game->red.change_control();
+                break;
+            case SDLK_RCTRL:
+                if (game->mode == PVP)
+                    game->blue.change_control();
+                break;
+            default:
+                break;
+        }
+    }
     
 }
 void event_handler_pause(SDL_Event * event)
