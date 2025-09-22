@@ -2,8 +2,17 @@
 
 void Team::set_members(std::vector<Player*> players)
 {
-    for (int i = 0; i<players.size(); i++)
+    // Delete old players to avoid memory leaks and reset state
+    for (int i = 0; i < members.size(); i++) {
+        if (members[i] != nullptr) {
+            delete members[i];
+        }
+    }
+    members.clear();
+    // Add new players
+    for (int i = 0; i < players.size(); i++) {
         members.push_back(players[i]);
+    }
 }
 
 void Team::set_team(TEAM_CODE t)

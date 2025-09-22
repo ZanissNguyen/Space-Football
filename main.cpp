@@ -26,6 +26,11 @@ int main(int argc, char* args[])
     const Uint8* key_state = SDL_GetKeyboardState(NULL);
 
     // Event Handler
+
+    int pause_selection = 0; // 0 = Resume, 1 = Quit to menu
+    int result_selection = 0; // 0 = New Game, 1 = Quit to menu
+    int winner = -1; // 0 = red, 1 = blue, 2 = tie
+
     while (running)
     {
         while (SDL_PollEvent(&event)) 
@@ -35,8 +40,44 @@ int main(int argc, char* args[])
             switch (state) {
                 case MENU:    event_handler_menu(&event, &state); break;
                 case CHOOSE_MAP: event_handler_choose_map(&event, &state); break;
-                case PLAYING: event_handler_playing(&event); break;
-                case SCORING: event_handler_scoring(&event); break;
+                case PLAYING:
+                    // Pause with ESC
+                    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+                        state = PAUSE;
+                        pause_selection = 0;
+                        break;
+                    }
+                    event_handler_playing(&event);
+                    break;
+                case PAUSE:
+                    if (event.type == SDL_KEYDOWN) {
+                        if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s) {
+                            pause_selection = 1 - pause_selection;
+                        } else if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_SPACE) {
+                            if (pause_selection == 0) {
+                                state = PLAYING;
+                            } else {
+                                state = MENU;
+                            }
+                        }
+                    }
+                    break;
+                case RESULT:
+                    if (event.type == SDL_KEYDOWN) {
+                        if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s) {
+                            result_selection = 1 - result_selection;
+                        } else if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_SPACE) {
+                            if (result_selection == 0) {
+                                state = CHOOSE_MAP;
+                            } else {
+                                state = MENU;
+                            }
+                        }
+                    }
+                    break;
+                case SCORING:
+                    // event_handler_scoring(&event);
+                    break;
             }
         }
 
@@ -45,7 +86,6 @@ int main(int argc, char* args[])
         {
             if (game.mode == PVP)
             {
-                // printf("is it ok");
                 if (key_state[SDL_SCANCODE_UP]) 
                     game.blue.members[game.blue.active_player]->acceleration.y -= BASE_ACCELERATION;
                 if (key_state[SDL_SCANCODE_DOWN]) 
@@ -66,8 +106,16 @@ int main(int argc, char* args[])
                 game.red.members[game.red.active_player]->acceleration.x += BASE_ACCELERATION;
 
             // update game logic
-            // goal check, moving, 
             game.process(delay/1000.0f);
+
+            // Check for end of second half (game.half_time_break == false, game.half_time_remaining <= 0, current_half == 2)
+            if (!game.half_time_break && game.half_time_remaining <= 0 && game.current_half == 2) {
+                if (game.red.score > game.blue.score) winner = 0;
+                else if (game.red.score < game.blue.score) winner = 1;
+                else winner = 2;
+                state = RESULT;
+                result_selection = 0;
+            }
         }
 
         // draws_things()
@@ -75,28 +123,29 @@ int main(int argc, char* args[])
         switch (state)
         {
             case MENU:
-            draw_menu(window, renderer);
-            break;
-
+                draw_menu(window, renderer);
+                break;
             case CHOOSE_MAP:
-            draw_choose_map(window, renderer);
-            break;
-
+                draw_choose_map(window, renderer);
+                break;
             case PLAYING:
-            draw_game(&game, window, renderer);
-            break;
-
+                draw_game(&game, window, renderer);
+                break;
+            case PAUSE:
+                draw_pause(window, renderer, pause_selection);
+                break;
+            case RESULT:
+                draw_result(window, renderer, winner, result_selection);
+                break;
             case SCORING:
-            // event_handler_scoring(&event);
-            break;
-
+                // event_handler_scoring(&event);
+                break;
             default:
-            break;
+                break;
         }
         SDL_RenderPresent(renderer);
 
         SDL_Delay(delay); // ~60 FPS
-        // printf("Printing Frame...");
     }
 
     //Free resources and close SDL
@@ -345,6 +394,44 @@ void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer)
     draw_text_white("USE A/D OR LEFT/RIGHT TO NAVIGATE", SCREEN_WIDTH/2 - 210, 500, window, renderer, 0.3f);
     draw_text_white("PRESS ENTER OR SPACE TO SELECT", SCREEN_WIDTH/2 - 190, 530, window, renderer, 0.3f);
     draw_text_white("PRESS ESC TO GO BACK", SCREEN_WIDTH/2 - 130, 560, window, renderer, 0.3f);
+}
+
+void draw_pause(SDL_Window* window, SDL_Renderer* renderer, int selection)
+{
+    SDL_SetRenderDrawColor(renderer, 20, 20, 60, 255);
+    SDL_RenderClear(renderer);
+    draw_text_white("PAUSED", SCREEN_WIDTH/2 - 60, 180, window, renderer, 0.8f);
+    if (selection == 0) {
+        draw_text_white("> RESUME", SCREEN_WIDTH/2 - 80, 300, window, renderer, 0.6f);
+        draw_text_white("  QUIT TO MENU", SCREEN_WIDTH/2 - 80, 370, window, renderer, 0.6f);
+    } else {
+        draw_text_white("  RESUME", SCREEN_WIDTH/2 - 80, 300, window, renderer, 0.6f);
+        draw_text_white("> QUIT TO MENU", SCREEN_WIDTH/2 - 80, 370, window, renderer, 0.6f);
+    }
+    draw_text_white("UP/DOWN or W/S to move, ENTER/SPACE to select", SCREEN_WIDTH/2 - 220, 500, window, renderer, 0.3f);
+}
+
+void draw_result(SDL_Window* window, SDL_Renderer* renderer, int winner, int selection)
+{
+    SDL_SetRenderDrawColor(renderer, 20, 20, 60, 255);
+    SDL_RenderClear(renderer);
+    if (winner == 0)
+        draw_text_white("RED WINS!", SCREEN_WIDTH/2 - 90, 180, window, renderer, 0.8f);
+    else if (winner == 1)
+        draw_text_white("BLUE WINS!", SCREEN_WIDTH/2 - 100, 180, window, renderer, 0.8f);
+    else
+        draw_text_white("IT'S A TIE!", SCREEN_WIDTH/2 - 90, 180, window, renderer, 0.8f);
+    char score_str[32];
+    snprintf(score_str, sizeof(score_str), "RED: %d   BLUE: %d", game.red.score, game.blue.score);
+    draw_text_white(score_str, SCREEN_WIDTH/2 - 110, 260, window, renderer, 0.6f);
+    if (selection == 0) {
+        draw_text_white("> NEW GAME", SCREEN_WIDTH/2 - 80, 350, window, renderer, 0.6f);
+        draw_text_white("  QUIT TO MENU", SCREEN_WIDTH/2 - 80, 420, window, renderer, 0.6f);
+    } else {
+        draw_text_white("  NEW GAME", SCREEN_WIDTH/2 - 80, 350, window, renderer, 0.6f);
+        draw_text_white("> QUIT TO MENU", SCREEN_WIDTH/2 - 80, 420, window, renderer, 0.6f);
+    }
+    draw_text_white("UP/DOWN or W/S to move, ENTER/SPACE to select", SCREEN_WIDTH/2 - 220, 520, window, renderer, 0.3f);
 }
 
 

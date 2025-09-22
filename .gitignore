@@ -5,3 +5,6 @@
 # AI stuff
 CLAUDE.md
 .claude/
+
+# Other
+.vscode/

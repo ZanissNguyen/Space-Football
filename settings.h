@@ -19,6 +19,8 @@ enum GAME_STATE {
     CHOOSE_PLAYER,
     RECHECK,
     PLAYING,
+    PAUSE,
+    RESULT,
     SCORING,
     HELP
 };
