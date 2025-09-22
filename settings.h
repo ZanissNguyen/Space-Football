@@ -43,13 +43,37 @@ extern const std::string IMAGE_PATH;
 extern const std::string AUDIO_PATH;
 
 extern const int SCREEN_WIDTH;
+extern const int TOP_PADDING;
 extern const int SCREEN_HEIGHT;
 extern const int FPS;
 
 extern const Uint64 GAME_TIME;
+extern const float HALF_DURATION; // Duration of each half in seconds
 
 extern const int PLAYER_SIZE;
 extern const int PLAYER_SIZE_SPACE;
+extern const int PLAYER_SPRITE_WIDTH;
+extern const int PLAYER_SPRITE_HEIGHT;
+extern const int PLAYER_SPRITE_SRC_WIDTH;
+extern const int PLAYER_SPRITE_SRC_HEIGHT;
+
+// Limb sprite positions
+extern const int BLUE_ARM_X;
+extern const int BLUE_ARM_Y;
+extern const int BLUE_ARM_WIDTH;
+extern const int BLUE_ARM_HEIGHT;
+extern const int BLUE_LEG_X;
+extern const int BLUE_LEG_Y;
+extern const int BLUE_LEG_WIDTH;
+extern const int BLUE_LEG_HEIGHT;
+extern const int RED_ARM_X;
+extern const int RED_ARM_Y;
+extern const int RED_ARM_WIDTH;
+extern const int RED_ARM_HEIGHT;
+extern const int RED_LEG_X;
+extern const int RED_LEG_Y;
+extern const int RED_LEG_WIDTH;
+extern const int RED_LEG_HEIGHT;
 
 extern const float BASE_ACCELERATION;
 extern const int NUMBER_OF_PLAYER;

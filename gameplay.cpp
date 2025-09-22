@@ -18,12 +18,36 @@ void Team::change_control()
 
 // ---------------- Gameplay ----------------
 void Gameplay::process(float delay) {
-    // TODO: implement collision and gameplay processing
-    // is there have time remaining?
-    Uint64 now = SDL_GetTicks64();
-    if (now - start_time >= GAME_TIME)
-    {
+    // Handle countdown
+    if (countdown_active) {
+        countdown_timer -= delay;
+        if (countdown_timer <= 0.0f) {
+            countdown_active = false;
+            // Countdown finished - game can start
+        }
+        return; // Don't process game logic during countdown
+    }
 
+    // Update timer
+    if (!half_time_break) {
+        half_time_remaining -= delay;
+
+        // Check if half time ended
+        if (half_time_remaining <= 0.0f) {
+            if (current_half == 1) {
+                // End of first half - start break
+                current_half = 2;
+                half_time_remaining = HALF_DURATION; // Reset for second half
+                half_time_break = true;
+                printf("Half Time! Press any key to continue to second half...\n");
+                return; // Don't process game logic during break
+            } else {
+                // End of second half - game over
+                half_time_remaining = 0.0f;
+                printf("Full Time! Final Score - Red: %d, Blue: %d\n", red.score, blue.score);
+                return; // Game finished
+            }
+        }
     }
 
     // moving
@@ -40,6 +64,7 @@ void Gameplay::process(float delay) {
     {
         printf("Goal! Score (Red - Blue): (%d, %d)", red.score, blue.score);
         new_play();
+        start_countdown(); // Start countdown after goal
     }
 
     // collision process
@@ -92,6 +117,15 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     blue.set_members(blue_members);
     start_time = SDL_GetTicks64();
     ball.setRadius(BALL_SIZE/2);
+
+    // Initialize timer for first half
+    current_half = 1;
+    half_time_remaining = HALF_DURATION;
+    half_time_break = false;
+
+    // Initialize countdown
+    countdown_timer = 3.0f; // Start from 3
+    countdown_active = true;
 
     // printf("assign complete!");
     new_play();
@@ -299,20 +333,41 @@ bool is_player_shoot(Player* player, Ball* ball) {
 }
 
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
-    // TODO: check if ball is inside goal
-    int field_width = SCREEN_WIDTH;
-    int field_height = SCREEN_HEIGHT - 120;
+    // Match the visual goal range drawn by draw_goals
+    int field_height = SCREEN_HEIGHT - TOP_PADDING;
+    int tile_size = 64;
+    int num_y = field_height / tile_size;
 
-    int goal_size = 30;
-    // Khung thành trái: x <= 10, y trong [250,470]
-    if (ball->position.x <= goal_size && 
-        ball->position.y >= field_height/3 && ball->position.y <= 2*field_height/3) {
+    // Goal Y range matches the visual tiles: (num_y/2 - 2) to (num_y/2 + 2)
+    int goal_top_y = TOP_PADDING + (num_y/2 - 2) * tile_size + 40;
+    int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40; // +1 for inclusive range
+
+    // Goal X range: within the goal post tiles
+    int goal_depth = tile_size / 2; // One tile deep
+
+    // Left goal (blue scores): x <= goal_depth, y in goal range
+    if (ball->position.x <= goal_depth &&
+        ball->position.y >= goal_top_y && ball->position.y <= goal_bottom_y) {
         *blue_score+=1; return true;
     }
-    // Khung thành phải: x+size >= 1270, y trong [250,470]
-    if (ball->position.x >= SCREEN_WIDTH-goal_size && 
-        ball->position.y >= field_height/3 && ball->position.y <= 2*field_height/3) {
+
+    // Right goal (red scores): x >= screen_width - goal_depth, y in goal range
+    if (ball->position.x >= SCREEN_WIDTH - goal_depth &&
+        ball->position.y >= goal_top_y && ball->position.y <= goal_bottom_y) {
         *red_score+=1; return true;
     }
+
     return false;
+}
+
+void Gameplay::resume_second_half() {
+    half_time_break = false;
+    new_play(); // Reset player positions for second half
+    start_countdown(); // Start countdown for second half
+    printf("Second half started!\n");
+}
+
+void Gameplay::start_countdown() {
+    countdown_timer = 3.0f; // Reset countdown from 3
+    countdown_active = true;
 }
