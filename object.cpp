@@ -25,14 +25,24 @@ void Ball::move(float dt)
     // Update particle system for comet trail
     updateParticles(dt, speed);
 
-    float bounce_friction = (game.map == MOON) ? FRICTION_MOON : FRICTION_EARTH;
+    float bounce_damping = (game.map == MOON) ? 0.8f : 0.3f; // Ball bounces more on Moon
     // position process:
-    if (display_rect.x <=0) { change_x(1+radius); velocity.x = -velocity.x*(1-bounce_friction); }
-    if (display_rect.y <=120) { change_y(121+radius); velocity.y = -velocity.y*(1-bounce_friction); }
-    if (display_rect.x + radius*2 >= SCREEN_WIDTH)
-        { change_x(SCREEN_WIDTH - radius); velocity.x = -velocity.x*(1-bounce_friction);}
-    if (display_rect.y + radius*2 >= SCREEN_HEIGHT)
-        { change_y(SCREEN_HEIGHT - radius); velocity.y = -velocity.y*(1-bounce_friction);}
+    if (display_rect.x <= 0 && velocity.x < 0) {
+        change_x(radius);
+        velocity.x = -velocity.x * bounce_damping;
+    }
+    if (display_rect.y <= 120 && velocity.y < 0) {
+        change_y(120 + radius);
+        velocity.y = -velocity.y * bounce_damping;
+    }
+    if (display_rect.x + radius*2 >= SCREEN_WIDTH && velocity.x > 0) {
+        change_x(SCREEN_WIDTH - radius);
+        velocity.x = -velocity.x * bounce_damping;
+    }
+    if (display_rect.y + radius*2 >= SCREEN_HEIGHT && velocity.y > 0) {
+        change_y(SCREEN_HEIGHT - radius);
+        velocity.y = -velocity.y * bounce_damping;
+    }
 
     // printf("Circle: position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 }
@@ -141,6 +151,14 @@ void Player::move(float dt)
     velocity += acceleration * dt * accel_scale;
     velocity *= (1.0f - friction * dt);
 
+    // Apply max speed limit
+    float speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    if (speed > MAX_PLAYER_SPEED) {
+        float scale = MAX_PLAYER_SPEED / speed;
+        velocity.x *= scale;
+        velocity.y *= scale;
+    }
+
     // dx = x + dv
     Vec2 new_position = position += velocity * dt;
     change_position(new_position.x, new_position.y);
@@ -155,14 +173,24 @@ void Player::move(float dt)
         animation_time = 0.0f; // Reset animation when not moving
     }
 
-    float bounce_friction = (game.map == MOON) ? FRICTION_MOON : FRICTION_EARTH;
+    float bounce_damping = (game.map == MOON) ? 0.7f : 0.0f; // Moon: bouncy, Earth: stop at walls
     // position process:
-    if (rect.x <=0) { change_x(1+PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-bounce_friction); }
-    if (rect.y <=120) { change_y(121+PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-bounce_friction); }
-    if (rect.x + PLAYER_SPRITE_WIDTH >= SCREEN_WIDTH)
-        { change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-bounce_friction);}
-    if (rect.y + PLAYER_SPRITE_HEIGHT >= SCREEN_HEIGHT)
-        { change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-bounce_friction);}
+    if (rect.x <= 0 && velocity.x < 0) {
+        change_x(PLAYER_SPRITE_WIDTH/2.0);
+        velocity.x = -velocity.x * bounce_damping;
+    }
+    if (rect.y <= 120 && velocity.y < 0) {
+        change_y(120 + PLAYER_SPRITE_HEIGHT/2.0);
+        velocity.y = -velocity.y * bounce_damping;
+    }
+    if (rect.x + PLAYER_SPRITE_WIDTH >= SCREEN_WIDTH && velocity.x > 0) {
+        change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2.0);
+        velocity.x = -velocity.x * bounce_damping;
+    }
+    if (rect.y + PLAYER_SPRITE_HEIGHT >= SCREEN_HEIGHT && velocity.y > 0) {
+        change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2.0);
+        velocity.y = -velocity.y * bounce_damping;
+    }
 
     // printf("position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 
