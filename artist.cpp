@@ -12,6 +12,9 @@ void draw_game(Gameplay * game, SDL_Window * window, SDL_Renderer * renderer)
     }
 
     draw_ball(&(game->ball), window, renderer);
+
+    // Draw goals on top of everything (highest z-index)
+    draw_goals(window, renderer);
 }
 
 SDL_Texture * getTexture(SDL_Window* window, SDL_Renderer* renderer, std::string path)
@@ -357,4 +360,50 @@ void draw_ball(Ball* ball, SDL_Window* window, SDL_Renderer* renderer)
 
     SDL_DestroyTexture(texture);
     texture = NULL;
+}
+
+void draw_goals(SDL_Window* window, SDL_Renderer* renderer)
+{
+    // Field dimensions (matching draw_field exactly)
+    int field_width = SCREEN_WIDTH;
+    int field_height = SCREEN_HEIGHT - TOP_PADDING;
+    int field_x = 0;
+    int field_y = TOP_PADDING;
+    int tile_size = 64;
+
+    int num_x = field_width / tile_size;
+    int num_y = field_height / tile_size;
+
+    auto draw_goal_tile = [&](const std::string& filename, int tile_x, int tile_y) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << filename;
+        std::string path = ospath.str();
+
+        SDL_Texture* texture = getTexture(window, renderer, path);
+        if (texture) {
+            SDL_Rect dst_rect = {
+                field_x + tile_x * tile_size,
+                field_y + tile_y * tile_size,
+                tile_size,
+                tile_size
+            };
+            SDL_RenderCopy(renderer, texture, NULL, &dst_rect);
+            SDL_DestroyTexture(texture);
+        }
+    };
+
+    // Left goal posts - draw individual 64x64 tiles
+    draw_goal_tile("goal_left_top.bmp", 0, num_y / 2 - 2);
+    draw_goal_tile("goal_left.bmp", 0, num_y / 2 - 1);
+    draw_goal_tile("goal_left.bmp", 0, num_y / 2 - 0);
+    draw_goal_tile("goal_left.bmp", 0, num_y / 2 + 1);
+    draw_goal_tile("goal_left_bot.bmp", 0, num_y / 2 + 2);
+
+
+    // Right goal posts - draw individual 64x64 tiles
+    draw_goal_tile("goal_right_top.bmp", num_x - 1, num_y / 2 - 2);
+    draw_goal_tile("goal_right.bmp", num_x - 1, num_y / 2 - 1);
+    draw_goal_tile("goal_right.bmp", num_x - 1, num_y / 2 - 0);
+    draw_goal_tile("goal_right.bmp", num_x - 1, num_y / 2 + 1);
+    draw_goal_tile("goal_right_bot.bmp", num_x - 1, num_y / 2 + 2);
 }

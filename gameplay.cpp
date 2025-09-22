@@ -247,20 +247,29 @@ bool is_player_shoot(Player* player, Ball* ball) {
 }
 
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
-    // TODO: check if ball is inside goal
-    int field_width = SCREEN_WIDTH;
-    int field_height = SCREEN_HEIGHT - 120;
+    // Match the visual goal range drawn by draw_goals
+    int field_height = SCREEN_HEIGHT - TOP_PADDING;
+    int tile_size = 64;
+    int num_y = field_height / tile_size;
 
-    int goal_size = 30;
-    // Khung thành trái: x <= 10, y trong [250,470]
-    if (ball->position.x <= goal_size && 
-        ball->position.y >= field_height/3 && ball->position.y <= 2*field_height/3) {
+    // Goal Y range matches the visual tiles: (num_y/2 - 2) to (num_y/2 + 2)
+    int goal_top_y = TOP_PADDING + (num_y/2 - 2) * tile_size + 40;
+    int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40; // +1 for inclusive range
+
+    // Goal X range: within the goal post tiles
+    int goal_depth = tile_size / 2; // One tile deep
+
+    // Left goal (blue scores): x <= goal_depth, y in goal range
+    if (ball->position.x <= goal_depth &&
+        ball->position.y >= goal_top_y && ball->position.y <= goal_bottom_y) {
         *blue_score+=1; return true;
     }
-    // Khung thành phải: x+size >= 1270, y trong [250,470]
-    if (ball->position.x >= SCREEN_WIDTH-goal_size && 
-        ball->position.y >= field_height/3 && ball->position.y <= 2*field_height/3) {
+
+    // Right goal (red scores): x >= screen_width - goal_depth, y in goal range
+    if (ball->position.x >= SCREEN_WIDTH - goal_depth &&
+        ball->position.y >= goal_top_y && ball->position.y <= goal_bottom_y) {
         *red_score+=1; return true;
     }
+
     return false;
 }

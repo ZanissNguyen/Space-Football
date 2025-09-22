@@ -12,3 +12,4 @@ void draw_limb(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture,
                double angle, SDL_RendererFlip flip);
 void draw_field(SDL_Window * window, SDL_Renderer * renderer);
 void draw_ball(Ball* ball,SDL_Window* window, SDL_Renderer * renderer);
+void draw_goals(SDL_Window* window, SDL_Renderer* renderer);
