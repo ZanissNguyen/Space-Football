@@ -291,26 +291,55 @@ void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer)
         draw_text_white("> MOON", SCREEN_WIDTH/2 + 100, 300, window, renderer, 0.6f);
     }
 
-    // Draw placeholder rectangles for map images
-    SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-
-    // Earth rectangle
-    SDL_Rect earth_rect = {SCREEN_WIDTH/2 - 250, 350, 150, 100};
-    if (map_selection == 0) {
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green border for selected
-    } else {
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // Gray border
+    // Draw map option images
+    static SDL_Texture* earth_option_texture = nullptr;
+    static SDL_Texture* moon_option_texture = nullptr;
+    if (!earth_option_texture) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "earth_option.bmp";
+        earth_option_texture = getTexture(window, renderer, ospath.str());
     }
-    SDL_RenderDrawRect(renderer, &earth_rect);
-
-    // Moon rectangle
-    SDL_Rect moon_rect = {SCREEN_WIDTH/2 + 50, 350, 150, 100};
-    if (map_selection == 1) {
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green border for selected
-    } else {
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // Gray border
+    if (!moon_option_texture) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "moon_option.bmp";
+        moon_option_texture = getTexture(window, renderer, ospath.str());
     }
-    SDL_RenderDrawRect(renderer, &moon_rect);
+
+    // Use the same (larger) size for both images and center them
+    const int option_width = 320;
+    const int option_height = 220;
+    const int option_gap = 60;
+    int total_width = option_width * 2 + option_gap;
+    int start_x = (SCREEN_WIDTH - total_width) / 2;
+    int y = 260;
+    SDL_Rect earth_rect = {start_x, y, option_width, option_height};
+    SDL_Rect moon_rect = {start_x + option_width + option_gap, y, option_width, option_height};
+
+    // Draw images
+    if (earth_option_texture) {
+        SDL_RenderCopy(renderer, earth_option_texture, NULL, &earth_rect);
+    }
+    if (moon_option_texture) {
+        SDL_RenderCopy(renderer, moon_option_texture, NULL, &moon_rect);
+    }
+
+    // Draw selection border
+    // Draw thick white border for selected, gray for unselected
+    auto draw_thick_border = [&](const SDL_Rect& rect, bool selected) {
+        int thickness = 8;
+        if (selected) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+            for (int i = 0; i < thickness; ++i) {
+                SDL_Rect r = {rect.x - i, rect.y - i, rect.w + 2 * i, rect.h + 2 * i};
+                SDL_RenderDrawRect(renderer, &r);
+            }
+        } else {
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // Gray
+            SDL_RenderDrawRect(renderer, &rect);
+        }
+    };
+    draw_thick_border(earth_rect, map_selection == 0);
+    draw_thick_border(moon_rect, map_selection == 1);
 
     // Draw instructions with white text
     draw_text_white("USE A/D OR LEFT/RIGHT TO NAVIGATE", SCREEN_WIDTH/2 - 210, 500, window, renderer, 0.3f);

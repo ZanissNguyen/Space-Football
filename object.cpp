@@ -1,9 +1,15 @@
 #include "object.h"
+#include "gameplay.h"
 
 // ======================= Player Class ==========================
 void Ball::move(float dt)
 {
-    velocity *= (1.0f - FRICTION_EARTH * dt);
+    extern Gameplay game;
+    float friction = FRICTION_EARTH;
+    if (game.map == MOON) {
+        friction = FRICTION_MOON;
+    }
+    velocity *= (1.0f - friction * dt);
 
     // dx = x + dv
     Vec2 new_position = position + velocity * dt;
@@ -19,15 +25,14 @@ void Ball::move(float dt)
     // Update particle system for comet trail
     updateParticles(dt, speed);
 
-    int FRICTION_EARTH = 0.5;
-
+    float bounce_friction = (game.map == MOON) ? FRICTION_MOON : FRICTION_EARTH;
     // position process:
-    if (display_rect.x <=0) { change_x(1+radius); velocity.x = -velocity.x*(1-FRICTION_EARTH); }
-    if (display_rect.y <=120) { change_y(121+radius); velocity.y = -velocity.y*(1-FRICTION_EARTH); }
+    if (display_rect.x <=0) { change_x(1+radius); velocity.x = -velocity.x*(1-bounce_friction); }
+    if (display_rect.y <=120) { change_y(121+radius); velocity.y = -velocity.y*(1-bounce_friction); }
     if (display_rect.x + radius*2 >= SCREEN_WIDTH)
-        { change_x(SCREEN_WIDTH - radius); velocity.x = -velocity.x*(1-FRICTION_EARTH);}
+        { change_x(SCREEN_WIDTH - radius); velocity.x = -velocity.x*(1-bounce_friction);}
     if (display_rect.y + radius*2 >= SCREEN_HEIGHT)
-        { change_y(SCREEN_HEIGHT - radius); velocity.y = -velocity.y*(1-FRICTION_EARTH);}
+        { change_y(SCREEN_HEIGHT - radius); velocity.y = -velocity.y*(1-bounce_friction);}
 
     // printf("Circle: position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 }
@@ -125,15 +130,20 @@ void Player::place(int init_x, int init_y)
 
 void Player::move(float dt)
 {
+    extern Gameplay game;
+    float friction = FRICTION_EARTH;
+    float accel_scale = 1.0f;
+    if (game.map == MOON) {
+        friction = FRICTION_MOON;
+        accel_scale = 0.5f; // slower acceleration
+    }
     // dv = a * dt
-    velocity += acceleration * dt;
-    velocity *= (1.0f - FRICTION_EARTH * dt);
+    velocity += acceleration * dt * accel_scale;
+    velocity *= (1.0f - friction * dt);
 
     // dx = x + dv
     Vec2 new_position = position += velocity * dt;
     change_position(new_position.x, new_position.y);
-
-    int FRICTION_EARTH = 0.5;
 
     // Calculate rotation and animation based on velocity
     if (velocity.x != 0 || velocity.y != 0) {
@@ -145,13 +155,14 @@ void Player::move(float dt)
         animation_time = 0.0f; // Reset animation when not moving
     }
 
+    float bounce_friction = (game.map == MOON) ? FRICTION_MOON : FRICTION_EARTH;
     // position process:
-    if (rect.x <=0) { change_x(1+PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-FRICTION_EARTH); }
-    if (rect.y <=120) { change_y(121+PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-FRICTION_EARTH); }
+    if (rect.x <=0) { change_x(1+PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-bounce_friction); }
+    if (rect.y <=120) { change_y(121+PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-bounce_friction); }
     if (rect.x + PLAYER_SPRITE_WIDTH >= SCREEN_WIDTH)
-        { change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-FRICTION_EARTH);}
+        { change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2.0); velocity.x = -velocity.x*(1-bounce_friction);}
     if (rect.y + PLAYER_SPRITE_HEIGHT >= SCREEN_HEIGHT)
-        { change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-FRICTION_EARTH);}
+        { change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2.0); velocity.y = -velocity.y*(1-bounce_friction);}
 
     // printf("position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 
