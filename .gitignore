@@ -1,0 +1,7 @@
+# Compiled file
+*.o
+*.exe
+
+# AI stuff
+CLAUDE.md
+.claude/

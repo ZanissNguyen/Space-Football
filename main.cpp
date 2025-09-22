@@ -115,6 +115,7 @@ bool game_initialize()
     if(!library_init())
     {
         printf("Failed to initialize!\n");
+        return false;
     }
     // else
     // {
@@ -124,7 +125,7 @@ bool game_initialize()
     //         printf( "Failed to load media!\n" );
     //     }
     // }
-    return false;
+    return true;
 }
 
 bool library_init()
