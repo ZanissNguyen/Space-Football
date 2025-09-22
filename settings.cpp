@@ -40,6 +40,7 @@ const int BALL_SIZE = 20;
 const int BALL_SIZE_EARTH = 10;
 
 const float BASE_ACCELERATION = 1500.0f;
+const float MAX_PLAYER_SPEED = 400.0f;
 const int NUMBER_OF_PLAYER = 2;
 
 // friction / fps; 6.0 mean decease 10% vel per frame

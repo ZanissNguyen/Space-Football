@@ -99,30 +99,32 @@ int main(int argc, char* args[])
         }
 
         // smooth moving
-        if (state == PLAYING)
+        if (state == PLAYING && !game.countdown_active)
         {
             if (game.mode == PVP)
             {
-                if (key_state[SDL_SCANCODE_UP]) 
+                if (key_state[SDL_SCANCODE_UP])
                     game.blue.members[game.blue.active_player]->acceleration.y -= BASE_ACCELERATION;
-                if (key_state[SDL_SCANCODE_DOWN]) 
+                if (key_state[SDL_SCANCODE_DOWN])
                     game.blue.members[game.blue.active_player]->acceleration.y += BASE_ACCELERATION;
-                if (key_state[SDL_SCANCODE_LEFT]) 
+                if (key_state[SDL_SCANCODE_LEFT])
                     game.blue.members[game.blue.active_player]->acceleration.x -= BASE_ACCELERATION;
                 if (key_state[SDL_SCANCODE_RIGHT])
                     game.blue.members[game.blue.active_player]->acceleration.x += BASE_ACCELERATION;
             }
 
-            if (key_state[SDL_SCANCODE_W]) 
+            if (key_state[SDL_SCANCODE_W])
                 game.red.members[game.red.active_player]->acceleration.y -= BASE_ACCELERATION;
-            if (key_state[SDL_SCANCODE_S]) 
+            if (key_state[SDL_SCANCODE_S])
                 game.red.members[game.red.active_player]->acceleration.y += BASE_ACCELERATION;
-            if (key_state[SDL_SCANCODE_A]) 
+            if (key_state[SDL_SCANCODE_A])
                 game.red.members[game.red.active_player]->acceleration.x -= BASE_ACCELERATION;
             if (key_state[SDL_SCANCODE_D])
                 game.red.members[game.red.active_player]->acceleration.x += BASE_ACCELERATION;
+        }
 
-            // update game logic
+        // update game logic (always call to handle countdown)
+        if (state == PLAYING) {
             game.process(delay/1000.0f);
 
             // Check for end of second half (game.half_time_break == false, game.half_time_remaining <= 0, current_half == 2)

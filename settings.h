@@ -78,6 +78,7 @@ extern const int RED_LEG_WIDTH;
 extern const int RED_LEG_HEIGHT;
 
 extern const float BASE_ACCELERATION;
+extern const float MAX_PLAYER_SPEED;
 extern const int NUMBER_OF_PLAYER;
 
 extern const int BALL_SIZE;
