@@ -48,6 +48,7 @@ extern const int SCREEN_HEIGHT;
 extern const int FPS;
 
 extern const Uint64 GAME_TIME;
+extern const float HALF_DURATION; // Duration of each half in seconds
 
 extern const int PLAYER_SIZE;
 extern const int PLAYER_SIZE_SPACE;

@@ -6,12 +6,12 @@ SDL_Window* window = NULL;
 // Create renderer
 SDL_Renderer* renderer = NULL;
 
+Gameplay game; // Make game global for event handlers
+
 int main(int argc, char* args[])
 {
     int delay = (int)1000/FPS;
     game_initialize();
-
-    Gameplay game;
     std::vector<Player*> players_red;
     players_red.push_back(new Player(0,0,RED));
     players_red.push_back(new Player(0,0,RED));
@@ -182,8 +182,14 @@ void event_handler_menu(SDL_Event * event)
 
 void event_handler_playing(SDL_Event* event)
 {
+    // Handle half-time break resume
+    if (event->type == SDL_KEYDOWN && game.half_time_break) {
+        game.resume_second_half();
+        return;
+    }
+
     // Process Smooth Moving
-    
+
 }
 void event_handler_pause(SDL_Event * event)
 {

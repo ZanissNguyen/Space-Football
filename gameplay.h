@@ -42,7 +42,18 @@ public:
 
     Uint64 start_time;
 
+    // Timer variables for 2 halves of 90 seconds each
+    int current_half; // 1 or 2
+    float half_time_remaining; // seconds remaining in current half
+    bool half_time_break; // true when between halves
+
+    // Countdown timer for game start/restart
+    float countdown_timer; // countdown from 3 to 0
+    bool countdown_active; // true when countdown is running
+
     void process(float delay);
+    void resume_second_half(); // Resume from half time break
+    void start_countdown(); // Start 3-2-1 countdown
     // process collision
     //   moving ai
     //   player vs player

@@ -13,12 +13,36 @@ void Team::set_team(TEAM_CODE t)
 
 // ---------------- Gameplay ----------------
 void Gameplay::process(float delay) {
-    // TODO: implement collision and gameplay processing
-    // is there have time remaining?
-    Uint64 now = SDL_GetTicks64();
-    if (now - start_time >= GAME_TIME)
-    {
+    // Handle countdown
+    if (countdown_active) {
+        countdown_timer -= delay;
+        if (countdown_timer <= 0.0f) {
+            countdown_active = false;
+            // Countdown finished - game can start
+        }
+        return; // Don't process game logic during countdown
+    }
 
+    // Update timer
+    if (!half_time_break) {
+        half_time_remaining -= delay;
+
+        // Check if half time ended
+        if (half_time_remaining <= 0.0f) {
+            if (current_half == 1) {
+                // End of first half - start break
+                current_half = 2;
+                half_time_remaining = HALF_DURATION; // Reset for second half
+                half_time_break = true;
+                printf("Half Time! Press any key to continue to second half...\n");
+                return; // Don't process game logic during break
+            } else {
+                // End of second half - game over
+                half_time_remaining = 0.0f;
+                printf("Full Time! Final Score - Red: %d, Blue: %d\n", red.score, blue.score);
+                return; // Game finished
+            }
+        }
     }
 
     // moving
@@ -35,6 +59,7 @@ void Gameplay::process(float delay) {
     {
         printf("Goal! Score (Red - Blue): (%d, %d)", red.score, blue.score);
         new_play();
+        start_countdown(); // Start countdown after goal
     }
 
     // collision process
@@ -87,6 +112,15 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     blue.set_members(blue_members);
     start_time = SDL_GetTicks64();
     ball.setRadius(BALL_SIZE/2);
+
+    // Initialize timer for first half
+    current_half = 1;
+    half_time_remaining = HALF_DURATION;
+    half_time_break = false;
+
+    // Initialize countdown
+    countdown_timer = 3.0f; // Start from 3
+    countdown_active = true;
 
     // printf("assign complete!");
     new_play();
@@ -272,4 +306,16 @@ bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
     }
 
     return false;
+}
+
+void Gameplay::resume_second_half() {
+    half_time_break = false;
+    new_play(); // Reset player positions for second half
+    start_countdown(); // Start countdown for second half
+    printf("Second half started!\n");
+}
+
+void Gameplay::start_countdown() {
+    countdown_timer = 3.0f; // Reset countdown from 3
+    countdown_active = true;
 }

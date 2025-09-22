@@ -13,3 +13,5 @@ void draw_limb(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture,
 void draw_field(SDL_Window * window, SDL_Renderer * renderer);
 void draw_ball(Ball* ball,SDL_Window* window, SDL_Renderer * renderer);
 void draw_goals(SDL_Window* window, SDL_Renderer* renderer);
+void draw_timer(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer);
+void draw_text(const std::string& text, int x, int y, SDL_Window* window, SDL_Renderer* renderer, float scale = 1.0f);
