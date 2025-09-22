@@ -15,3 +15,4 @@ void draw_ball(Ball* ball,SDL_Window* window, SDL_Renderer * renderer);
 void draw_goals(SDL_Window* window, SDL_Renderer* renderer);
 void draw_timer(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer);
 void draw_text(const std::string& text, int x, int y, SDL_Window* window, SDL_Renderer* renderer, float scale = 1.0f);
+void draw_text_white(const std::string& text, int x, int y, SDL_Window* window, SDL_Renderer* renderer, float scale = 1.0f);

@@ -8,22 +8,18 @@ SDL_Renderer* renderer = NULL;
 
 Gameplay game; // Make game global for event handlers
 
+// Menu state variables
+GAME_MODE selected_mode = PVP;
+GAME_MAP selected_map = EARTH;
+int menu_selection = 0; // 0 = PvP, 1 = PvE
+int map_selection = 0;  // 0 = Earth, 1 = Moon
+
 int main(int argc, char* args[])
 {
     int delay = (int)1000/FPS;
     game_initialize();
-    std::vector<Player*> players_red;
-    players_red.push_back(new Player(0,0,RED));
-    players_red.push_back(new Player(0,0,RED));
-    std::vector<Player*> players_blue;
-    players_blue.push_back(new Player(0,0,BLUE));
-    players_blue.push_back(new Player(0,0,BLUE));
-    // printf("game decleard!");
-    game.init(EARTH, players_red, players_blue);
-    game.mode = PVP;
-    // printf("game init completely!");
 
-    enum GAME_STATE state = GAME_STATE::PLAYING;
+    enum GAME_STATE state = GAME_STATE::MENU;
     bool running = true;
     SDL_Event event;
 
@@ -37,7 +33,8 @@ int main(int argc, char* args[])
             if (event.type == SDL_QUIT) running = false;
 
             switch (state) {
-                case MENU:    event_handler_menu(&event); break;
+                case MENU:    event_handler_menu(&event, &state); break;
+                case CHOOSE_MAP: event_handler_choose_map(&event, &state); break;
                 case PLAYING: event_handler_playing(&event); break;
                 case SCORING: event_handler_scoring(&event); break;
             }
@@ -78,24 +75,22 @@ int main(int argc, char* args[])
         switch (state)
         {
             case MENU:
-            // event_handler_menu(&event);
+            draw_menu(window, renderer);
+            break;
+
+            case CHOOSE_MAP:
+            draw_choose_map(window, renderer);
             break;
 
             case PLAYING:
             draw_game(&game, window, renderer);
-            // event_handler_playing(&event);
             break;
 
             case SCORING:
             // event_handler_scoring(&event);
             break;
-            
-            // case PAUSE:
-            // // event_handler_pause(&event);
-            // break;
 
             default:
-            // do not thing
             break;
         }
         SDL_RenderPresent(renderer);
@@ -175,9 +170,25 @@ void close()
     SDL_Quit();
 }
 
-void event_handler_menu(SDL_Event * event)
+void event_handler_menu(SDL_Event * event, GAME_STATE* state)
 {
-
+    if (event->type == SDL_KEYDOWN) {
+        switch (event->key.keysym.sym) {
+            case SDLK_UP:
+            case SDLK_w:
+                menu_selection = (menu_selection - 1 + 2) % 2; // Wrap around
+                break;
+            case SDLK_DOWN:
+            case SDLK_s:
+                menu_selection = (menu_selection + 1) % 2; // Wrap around
+                break;
+            case SDLK_RETURN:
+            case SDLK_SPACE:
+                selected_mode = (menu_selection == 0) ? PVP : PVE;
+                *state = CHOOSE_MAP;
+                break;
+        }
+    }
 }
 
 void event_handler_playing(SDL_Event* event)
@@ -195,9 +206,116 @@ void event_handler_pause(SDL_Event * event)
 {
 
 }
+void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
+{
+    if (event->type == SDL_KEYDOWN) {
+        switch (event->key.keysym.sym) {
+            case SDLK_LEFT:
+            case SDLK_a:
+                map_selection = (map_selection - 1 + 2) % 2; // Wrap around
+                break;
+            case SDLK_RIGHT:
+            case SDLK_d:
+                map_selection = (map_selection + 1) % 2; // Wrap around
+                break;
+            case SDLK_RETURN:
+            case SDLK_SPACE:
+                {
+                    selected_map = (map_selection == 0) ? EARTH : MOON;
+                    // Initialize game with selected settings
+                    std::vector<Player*> players_red;
+                    players_red.push_back(new Player(0,0,RED));
+                    players_red.push_back(new Player(0,0,RED));
+                    std::vector<Player*> players_blue;
+                    players_blue.push_back(new Player(0,0,BLUE));
+                    players_blue.push_back(new Player(0,0,BLUE));
+                    game.init(selected_map, players_red, players_blue);
+                    game.mode = selected_mode;
+                    *state = PLAYING;
+                    break;
+                }
+            case SDLK_ESCAPE:
+                *state = MENU;
+                break;
+        }
+    }
+}
+
 void event_handler_scoring(SDL_Event * event)
 {
 
+}
+
+void draw_menu(SDL_Window* window, SDL_Renderer* renderer)
+{
+    // Set dark blue background instead of black for visibility
+    SDL_SetRenderDrawColor(renderer, 20, 20, 60, 255);
+    SDL_RenderClear(renderer);
+
+    // Draw title with white text
+    draw_text_white("SPACE FOOTBALL", SCREEN_WIDTH/2 - 120, 150, window, renderer, 0.8f);
+
+    // Draw menu options with white text
+    if (menu_selection == 0) {
+        // Highlight PvP
+        draw_text_white("> PLAYER VS PLAYER", SCREEN_WIDTH/2 - 150, 300, window, renderer, 0.5f);
+        draw_text_white("  PLAYER VS AI", SCREEN_WIDTH/2 - 120, 350, window, renderer, 0.5f);
+    } else {
+        // Highlight PvE
+        draw_text_white("  PLAYER VS PLAYER", SCREEN_WIDTH/2 - 150, 300, window, renderer, 0.5f);
+        draw_text_white("> PLAYER VS AI", SCREEN_WIDTH/2 - 120, 350, window, renderer, 0.5f);
+    }
+
+    // Draw instructions with white text
+    draw_text_white("USE W/S OR UP/DOWN TO NAVIGATE", SCREEN_WIDTH/2 - 200, 450, window, renderer, 0.3f);
+    draw_text_white("PRESS ENTER OR SPACE TO SELECT", SCREEN_WIDTH/2 - 190, 480, window, renderer, 0.3f);
+}
+
+void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer)
+{
+    // Set dark blue background
+    SDL_SetRenderDrawColor(renderer, 20, 20, 60, 255);
+    SDL_RenderClear(renderer);
+
+    // Draw title with white text
+    draw_text_white("CHOOSE MAP", SCREEN_WIDTH/2 - 80, 150, window, renderer, 0.6f);
+
+    // Draw map options with selection indicators using white text
+    if (map_selection == 0) {
+        // Highlight Earth
+        draw_text_white("> EARTH", SCREEN_WIDTH/2 - 200, 300, window, renderer, 0.6f);
+        draw_text_white("  MOON", SCREEN_WIDTH/2 + 100, 300, window, renderer, 0.6f);
+    } else {
+        // Highlight Moon
+        draw_text_white("  EARTH", SCREEN_WIDTH/2 - 200, 300, window, renderer, 0.6f);
+        draw_text_white("> MOON", SCREEN_WIDTH/2 + 100, 300, window, renderer, 0.6f);
+    }
+
+    // Draw placeholder rectangles for map images
+    SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+
+    // Earth rectangle
+    SDL_Rect earth_rect = {SCREEN_WIDTH/2 - 250, 350, 150, 100};
+    if (map_selection == 0) {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green border for selected
+    } else {
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // Gray border
+    }
+    SDL_RenderDrawRect(renderer, &earth_rect);
+
+    // Moon rectangle
+    SDL_Rect moon_rect = {SCREEN_WIDTH/2 + 50, 350, 150, 100};
+    if (map_selection == 1) {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green border for selected
+    } else {
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // Gray border
+    }
+    SDL_RenderDrawRect(renderer, &moon_rect);
+
+    // Draw instructions with white text
+    draw_text_white("USE A/D OR LEFT/RIGHT TO NAVIGATE", SCREEN_WIDTH/2 - 210, 500, window, renderer, 0.3f);
+    draw_text_white("PRESS ENTER OR SPACE TO SELECT", SCREEN_WIDTH/2 - 190, 530, window, renderer, 0.3f);
+    draw_text_white("PRESS ESC TO GO BACK", SCREEN_WIDTH/2 - 130, 560, window, renderer, 0.3f);
 }
 
 

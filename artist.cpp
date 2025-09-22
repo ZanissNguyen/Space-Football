@@ -191,13 +191,28 @@ void draw_player(Player* player, SDL_Window* window, SDL_Renderer* renderer)
 void draw_field(SDL_Window * window, SDL_Renderer * renderer)
 {
     // Static texture to avoid loading every frame
-    static SDL_Texture* field_texture = nullptr;
 
-    // Load texture once
-    if (!field_texture) {
-        std::ostringstream ospath;
-        ospath << IMAGE_PATH << "field_sprite_sheet.bmp";
-        field_texture = getTexture(window, renderer, ospath.str());
+    // Use static textures for each map
+    static SDL_Texture* earth_texture = nullptr;
+    static SDL_Texture* moon_texture = nullptr;
+    SDL_Texture* field_texture = nullptr;
+
+    // Determine which texture to use based on map
+    extern Gameplay game; // Use global game object to access map
+    if (game.map == MOON) {
+        if (!moon_texture) {
+            std::ostringstream ospath;
+            ospath << IMAGE_PATH << "field_sprite_sheet_moon.bmp";
+            moon_texture = getTexture(window, renderer, ospath.str());
+        }
+        field_texture = moon_texture;
+    } else {
+        if (!earth_texture) {
+            std::ostringstream ospath;
+            ospath << IMAGE_PATH << "field_sprite_sheet.bmp";
+            earth_texture = getTexture(window, renderer, ospath.str());
+        }
+        field_texture = earth_texture;
     }
 
     if (!field_texture) {
@@ -594,6 +609,85 @@ void draw_text(const std::string& text, int x, int y, SDL_Window* window, SDL_Re
 
         // Render character
         SDL_RenderCopy(renderer, text_sheet_texture, &src_rect, &dst_rect);
+
+        // Advance cursor
+        current_x += (int)(CHAR_RENDER_WIDTH * scale);
+    }
+
+    // Don't destroy static texture - it's reused
+}
+
+void draw_text_white(const std::string& text, int x, int y, SDL_Window* window, SDL_Renderer* renderer, float scale)
+{
+    // Static texture to avoid loading every frame
+    static SDL_Texture* text_sheet_white_texture = nullptr;
+
+    // Load texture once
+    if (!text_sheet_white_texture) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "text_sheet_white.bmp";
+        text_sheet_white_texture = getTexture(window, renderer, ospath.str());
+    }
+
+    if (!text_sheet_white_texture) return;
+
+    const int CHAR_WIDTH = 70;
+    const int CHAR_HEIGHT = 80;
+    const int CHAR_RENDER_WIDTH = 40; // Use center 40px of 70px cell
+    const int CHAR_OFFSET_X = 15; // Start 15px from left to center the 40px
+    const int COLS = 16;
+
+    int current_x = x;
+
+    for (char c : text) {
+        int row = -1, col = -1;
+
+        // Map character to row and column based on the character map
+        if (c >= '!' && c <= '/') {
+            row = 0;
+            col = c - '!';
+        } else if (c >= '0' && c <= '?') {
+            row = 1;
+            col = c - '0';
+        } else if (c >= '@' && c <= 'O') {
+            row = 2;
+            col = c - '@';
+        } else if (c >= 'P' && c <= '_') {
+            row = 3;
+            col = c - 'P';
+        } else if (c >= '`' && c <= 'o') {
+            row = 4;
+            col = c - '`';
+        } else if (c >= 'p' && c <= '~') {
+            row = 5;
+            col = c - 'p';
+        } else if (c == ' ') {
+            // Space - just advance cursor
+            current_x += (int)(CHAR_RENDER_WIDTH * scale * 0.5f); // Half width for space
+            continue;
+        } else {
+            // Unknown character - skip
+            continue;
+        }
+
+        // Calculate source rectangle - use center 40px of 70px cell
+        SDL_Rect src_rect = {
+            col * CHAR_WIDTH + CHAR_OFFSET_X,
+            row * CHAR_HEIGHT,
+            CHAR_RENDER_WIDTH,
+            CHAR_HEIGHT
+        };
+
+        // Calculate destination rectangle
+        SDL_Rect dst_rect = {
+            current_x,
+            y,
+            (int)(CHAR_RENDER_WIDTH * scale),
+            (int)(CHAR_HEIGHT * scale)
+        };
+
+        // Render character
+        SDL_RenderCopy(renderer, text_sheet_white_texture, &src_rect, &dst_rect);
 
         // Advance cursor
         current_x += (int)(CHAR_RENDER_WIDTH * scale);
