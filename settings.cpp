@@ -8,7 +8,7 @@ const int SCREEN_HEIGHT = 832; // 64 * 11 + 64 * 2
 const int TOP_PADDING = 128;   // 64 * 2
 const int FPS = 60;
 const Uint64 GAME_TIME = 180000;
-const float HALF_DURATION = 4.0f; // 90 seconds per half
+const float HALF_DURATION = 90.0f; // 90 seconds per half
 
 const int PLAYER_SIZE = 40;
 const int PLAYER_SPACE_SIZE = 20;
