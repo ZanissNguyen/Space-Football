@@ -11,7 +11,8 @@ bool game_initialize();
 bool library_init();
 void close();
 
-void event_handler_menu(SDL_Event* event);
+void event_handler_menu(SDL_Event* event, Gameplay &game, enum GAME_STATE &state, bool &running);
+void event_handler_choose_map(SDL_Event* event, Gameplay &game, enum GAME_STATE &state, bool &running);
 void event_handler_playing(SDL_Event* event);
 void event_handler_pause(SDL_Event * event);
-void event_handler_scoring(SDL_Event * event);
+void event_handler_scoring(SDL_Event * event, Gameplay &game, enum GAME_STATE &state);
