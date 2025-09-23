@@ -39,10 +39,14 @@ const int RED_LEG_HEIGHT = 12; // 198 - 186
 const int BALL_SIZE = 20;
 const int BALL_SIZE_EARTH = 10;
 
-const float BASE_ACCELERATION = 1500.0f;
+const float BASE_ACCELERATION = 1750.0f;
 const int NUMBER_OF_PLAYER = 2;
 
 // friction / fps; 6.0 mean decease 10% vel per frame
-const float FRICTION_EARTH = 3.0f;
-const float FRICTION_MOON = 0.6f;
-const float FRICTION_SPACE = 0.1f; // mars
+// ma sát
+const float FRICTION_EARTH = 3.0f; 
+const float FRICTION_MOON = 1.5f;
+
+// bounce constant (xử lý vận tốc khi chạm vào bo màn hình)
+const float BOUNCE_FACTOR_EARTH = 0.667f;
+const float BOUNCE_FACTOR_MOON = 0.333f;

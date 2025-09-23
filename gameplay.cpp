@@ -70,38 +70,21 @@ void Gameplay::process(float delay) {
     // collision process
     // players collision
     // red vs blue
-    if (is_player_collision(red.members[0], red.members[1]))
-    {
-        process_player_collision(red.members[0], red.members[1]);
-    }
-    if (is_player_collision(blue.members[0], blue.members[1]))
-    {
-        process_player_collision(blue.members[0], blue.members[1]);
-    }
+    process_player_collision(this, red.members[0], red.members[1]);
+    process_player_collision(this, blue.members[0], blue.members[1]);
 
     for (int i = 0; i<red.members.size(); i++)
     {
         for (int j = 0; j<blue.members.size(); j++)
         {
-            if (is_player_collision(red.members[i], blue.members[j]))
-            {
-                process_player_collision(red.members[i], blue.members[j]);
-            }
+            process_player_collision(this, red.members[i], blue.members[j]);
         }
     }
 
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
-        // if (is_player_shoot(red.members[i], &ball))
-        // {
-        //     // printf("red hit ball");
-            process_shoot_collision(red.members[i], &ball);
-        // }
-        // if (is_player_shoot(blue.members[i], &ball))
-        // {
-            // printf("blue hit ball");
-            process_shoot_collision(blue.members[i], &ball);
-        // }
+        process_shoot_collision(this, red.members[i], &ball);
+        process_shoot_collision(this, blue.members[i], &ball);
     }
     ball.move(delay);
 }
@@ -162,7 +145,10 @@ void Gameplay::rematch() {
 }
 
 // ---------------- Collision Functions ----------------
-void process_player_collision(Player* player1, Player* player2) {
+void process_player_collision(Gameplay * game, Player* player1, Player* player2) {
+    SDL_Rect p1Rect = player1->rect;
+    SDL_Rect p2Rect = player2->rect;
+    if (!SDL_HasIntersection(&p1Rect, &p2Rect)) return;
 
     Vec2 delta = Vec2(player2->position.x - player1->position.x
         , player2->position.y - player1->position.y);
@@ -172,7 +158,7 @@ void process_player_collision(Player* player1, Player* player2) {
     Vec2 direction = delta.normalize();
 
     // Minimum separation distance (sum of half-widths + small buffer)
-    float min_distance = (PLAYER_SIZE + PLAYER_SIZE) / 2.0f + 2.0f;
+    float min_distance = (PLAYER_SPRITE_WIDTH*2) / 2.0f + 2.0f;
     float overlap = min_distance - distance; 
     float total_toughness = player1->toughness + player2->toughness;
 
@@ -193,7 +179,7 @@ void process_player_collision(Player* player1, Player* player2) {
         }
 
         // // Apply collision response to velocities (bounce effect)
-        float bounce_factor = 0.3f;
+        float bounce_factor = (game->map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
 
         // Calculate relative velocity
         float rel_vx = player2->velocity.x - player1->velocity.x;
@@ -216,14 +202,7 @@ void process_player_collision(Player* player1, Player* player2) {
 
 }
 
-bool is_player_collision(Player* player1, Player* player2) {
-    // TODO: return true if players collide
-    SDL_Rect p1Rect = player1->rect;
-    SDL_Rect p2Rect = player2->rect;
-    return SDL_HasIntersection(&p1Rect, &p2Rect);
-}
-
-void process_shoot_collision(Player* player, Ball* ball) {
+void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
     SDL_Rect pRect = player->rect;
     Circle bCircle = ball->circle;
 
@@ -241,10 +220,11 @@ void process_shoot_collision(Player* player, Ball* ball) {
 
     // Normalization (direction)
     Vec2 normal = delta.normalize();
+    // printf("%f, %f\n", normal.x, normal.y);
 
     // Separate objects (prevent sinking) 
     float separation_factor = 1.2f; // tweak this for stability
-    float player_ratio = 0.2f;      // how much player is pushed back
+    float player_ratio = 0.1f;      // how much player is pushed back
     float ball_ratio   = 1.0f - player_ratio;
 
     // Proposed new ball position
@@ -257,79 +237,32 @@ void process_shoot_collision(Player* player, Ball* ball) {
                     (newBallY - ball->radius < 0) ||
                     (newBallY + ball->radius > SCREEN_HEIGHT);
 
-    if (!ballBlocked) {
-        // Normal case: move both
-        player->change_position(
-            player->position.x - normal.x * overlap * player_ratio * separation_factor,
-            player->position.y - normal.y * overlap * player_ratio * separation_factor
-        );
+    player->change_position(
+        player->position.x - normal.x * overlap * player_ratio * separation_factor,
+        player->position.y - normal.y * overlap * player_ratio * separation_factor
+    );
 
-        ball->change_position(newBallX, newBallY);
-    } else {
-        // Ball can’t move, so push player back more
-        player->change_position(
-            player->position.x - normal.x * overlap * separation_factor,
-            player->position.y - normal.y * overlap * separation_factor
-        );
-    }
+    ball->change_position(newBallX, newBallY);
 
-    // Step 5: Velocity response (impulse)
+    // Velocity response (impulse)
     // Relative velocity
     Vec2 relVel = ball->velocity - player->velocity;
     float velAlongNormal = relVel.x * normal.x + relVel.y * normal.y;
-
-    // Only resolve if moving toward each other
-    if (velAlongNormal > 0) return;
     
-    float bounce = 0.2f; // restitution (0 = no bounce, 1 = full bounce)
+    float bounce = (game->map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH; // restitution (0 = no bounce, 1 = full bounce)
 
     float impulse = -(1.0f + bounce) * velAlongNormal;
     // You can divide by "mass" if you simulate it. For now we just apply to ball.
     ball->velocity.x += impulse * normal.x;
     ball->velocity.y += impulse * normal.y;
-    
 
     // Gameplay tweak (kick if player is fast) ---
-    // float playerSpeed = player->velocity.magnitude();
-    // if (playerSpeed > 250) { // strong shoot threshold
-    //     ball->velocity += normal * (playerSpeed * 0.5f); // add extra force
-    // }
-}
-
-bool is_player_shoot(Player* player, Ball* ball) {
-    // TODO: return true if player shoots ball
-    SDL_Rect pRect = player->rect;
-    SDL_Rect bRect = ball->display_rect;
-    Circle bCircle = ball->circle;
-    if (!SDL_HasIntersection(&pRect, &bRect)) return false;
-    printf("rect collision\n");
-
-    // ball circle position.x, position.y, radius
-    // player rect  (rect.x, rect.y) 
-    //              (rect.x + player.width, rect.y) 
-    //              (rect.x, rect.y + player_height)
-    //              (rect.x + player_width, rect.y + player_height)
-    Vec2 delta = Vec2(bCircle.x - player->position.x, bCircle.y - player->position.y);
-    float distance = delta.magnitude();
-    Vec2 closest_corner = Vec2(0,0);
-
-    if (delta.x > 0)
-    {
-        printf("player in the left\n");
-        closest_corner.x = pRect.x + PLAYER_SIZE /*PLAYER WIDTH*/;
+    float playerSpeed = player->velocity.magnitude();
+    if (playerSpeed > 250) { // strong shoot threshold
+        ball->velocity += normal * (playerSpeed * 0.5f); // add extra force
     }
-    else closest_corner.x = pRect.x;
-    if (delta.y > 0)
-    {
-        printf("player above\n");
-        closest_corner.y = pRect.y + PLAYER_SIZE /*PLAYER_HEIGHT*/;
-    }
-    else closest_corner.y = pRect.y;
 
-    float corner_distance = Vec2(bCircle.x - closest_corner.x, bCircle.y - closest_corner.y).magnitude();
-    printf ("corner distance = %f\n", corner_distance);
-
-    return corner_distance <= ball->radius;
+    if (ballBlocked) ball->velocity*=-1;
 }
 
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {

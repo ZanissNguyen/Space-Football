@@ -74,11 +74,7 @@ public:
     // reset score, clock
 };
 
-void process_player_collision(Player * player1, Player * player2);
-bool is_player_collision(Player * player1, Player * player2);
-
-void process_shoot_collision(Player* player, Ball * ball);
-bool is_player_shoot(Player * player, Ball* ball);
-
+void process_player_collision(Gameplay * game, Player * player1, Player * player2);
+void process_shoot_collision(Gameplay * game, Player* player, Ball * ball);
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score);
 
