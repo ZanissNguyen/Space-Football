@@ -87,6 +87,8 @@ public:
         acceleration = Vec2(0, 0);
         rect = {init_x-PLAYER_SPRITE_WIDTH/2, init_y-PLAYER_SPRITE_HEIGHT/2, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT};
         team = init_team;
+
+        toughness = 2;
         rotation_angle = 0.0; // Start facing right
         animation_time = 0.0f;
         is_moving = false;

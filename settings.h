@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL2\SDL.h>
 #include <math.h>
 #include <stdio.h>
 #include <string>
@@ -86,4 +86,6 @@ extern const int BALL_SIZE_SPACE;
 
 extern const float FRICTION_EARTH;
 extern const float FRICTION_MOON;
-extern const float FRICTION_SPACE; // mars
+
+extern const float BOUNCE_FACTOR_EARTH;
+extern const float BOUNCE_FACTOR_MOON;

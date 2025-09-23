@@ -20,6 +20,11 @@ void Team::set_team(TEAM_CODE t)
     code = t;
 }
 
+void Team::change_control()
+{
+    active_player = (active_player == 0) ? 1: 0;
+}
+
 // ---------------- Gameplay ----------------
 void Gameplay::process(float delay) {
     // Handle countdown
@@ -74,38 +79,21 @@ void Gameplay::process(float delay) {
     // collision process
     // players collision
     // red vs blue
-    if (is_player_collision(red.members[0], red.members[1]))
-    {
-        process_player_collision(red.members[0], red.members[1]);
-    }
-    if (is_player_collision(blue.members[0], blue.members[1]))
-    {
-        process_player_collision(blue.members[0], blue.members[1]);
-    }
+    process_player_collision(this, red.members[0], red.members[1]);
+    process_player_collision(this, blue.members[0], blue.members[1]);
 
     for (int i = 0; i<red.members.size(); i++)
     {
         for (int j = 0; j<blue.members.size(); j++)
         {
-            if (is_player_collision(red.members[i], blue.members[j]))
-            {
-                process_player_collision(red.members[i], blue.members[j]);
-            }
+            process_player_collision(this, red.members[i], blue.members[j]);
         }
     }
 
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
-        if (is_player_shoot(red.members[i], &ball))
-        {
-            // printf("red hit ball");
-            process_shoot_collision(red.members[i], &ball);
-        }
-        if (is_player_shoot(blue.members[i], &ball))
-        {
-            // printf("blue hit ball");
-            process_shoot_collision(blue.members[i], &ball);
-        }
+        process_shoot_collision(this, red.members[i], &ball);
+        process_shoot_collision(this, blue.members[i], &ball);
     }
     ball.move(delay);
 }
@@ -166,127 +154,124 @@ void Gameplay::rematch() {
 }
 
 // ---------------- Collision Functions ----------------
-void process_player_collision(Player* player1, Player* player2) {
+void process_player_collision(Gameplay * game, Player* player1, Player* player2) {
     SDL_Rect p1Rect = player1->rect;
     SDL_Rect p2Rect = player2->rect;
+    if (!SDL_HasIntersection(&p1Rect, &p2Rect)) return;
 
-    if (SDL_HasIntersection(&p1Rect, &p2Rect)) {
-        // // Đảm bảo bóng không đi xuyên người: dịch bóng ra ngoài cầu thủ
-        // // need redefine
-        // if (p1Rect.x < p2Rect.x) player1->change_x(p2Rect.x - PLAYER_SIZE/2 - space);
-        // else if (p1Rect.x > p2Rect.x) player1->change_x(p2Rect.x + PLAYER_SIZE*3/2 + space);
-        // if (p1Rect.y < p2Rect.y) player1->change_y(p2Rect.y - PLAYER_SIZE/2 - space);
-        // else if (p1Rect.y > p2Rect.y) player1->change_y(p2Rect.y + PLAYER_SIZE*3/2 + space);
-        // // need redefine
-        // player1->velocity.x *=-0.2;
-        // player1->velocity.y *=-0.2;
-        // player2->velocity.x *=-0.2;
-        // player2->velocity.y *=-0.2;
+    Vec2 delta = Vec2(player2->position.x - player1->position.x
+        , player2->position.y - player1->position.y);
+    float distance = delta.magnitude();
 
-        // Calculate distance between player centers
-        float dx = player2->position.x - player1->position.x;
-        float dy = player2->position.y - player1->position.y;
-        float distance = sqrt(dx*dx + dy*dy);
+    // Normalize direction vector
+    Vec2 direction = delta.normalize();
 
-        // Avoid division by zero
-        if (distance < 1.0f) {
-            dx = 1.0f; dy = 0.0f; distance = 1.0f;
+    // Minimum separation distance (sum of half-widths + small buffer)
+    float min_distance = (PLAYER_SPRITE_WIDTH*2) / 2.0f + 2.0f;
+    float overlap = min_distance - distance; 
+    float total_toughness = player1->toughness + player2->toughness;
+
+    if (overlap > 0) {
+        // Separate players smoothly based on their toughness
+        float separation_factor = 1.0f; // Increased from 0.5f to prevent phase-through
+
+        if (total_toughness > 0) {
+            float p1_ratio = player2->toughness / total_toughness;
+            float p2_ratio = player1->toughness / total_toughness;
+
+            player1->change_position(player1->position.x-direction.x*overlap * p1_ratio *separation_factor,
+                player1->position.y-direction.y*overlap * p1_ratio *separation_factor);
+
+            player2->change_position(player2->position.x+direction.x*overlap * p2_ratio *separation_factor,
+                player2->position.y+direction.y*overlap * p2_ratio *separation_factor);
+
         }
 
-        // Normalize direction vector
-        float nx = dx / distance;
-        float ny = dy / distance;
+        // // Apply collision response to velocities (bounce effect)
+        float bounce_factor = (game->map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
 
-        // Minimum separation distance (sum of half-widths + small buffer)
-        float min_distance = (PLAYER_SPRITE_WIDTH + PLAYER_SPRITE_HEIGHT) / 2.0f + 2.0f;
-        float overlap = min_distance - distance;
+        // Calculate relative velocity
+        float rel_vx = player2->velocity.x - player1->velocity.x;
+        float rel_vy = player2->velocity.y - player1->velocity.y;
 
-        if (overlap > 0) {
-            // Separate players smoothly based on their toughness
-            float total_toughness = player1->toughness + player2->toughness;
-            float separation_factor = 1.0f; // Increased from 0.5f to prevent phase-through
+        // Calculate relative velocity along collision normal
+        float vel_along_normal = rel_vx * direction.x + rel_vy * direction.y;
 
-            if (total_toughness > 0) {
-                float p1_ratio = player2->toughness / total_toughness;
-                float p2_ratio = player1->toughness / total_toughness;
+        // Only resolve if objects are moving towards each other
+        if (vel_along_normal > 0) return;
 
-                // Move players apart
-                player1->position.x -= nx * overlap * p1_ratio * separation_factor;
-                player1->position.y -= ny * overlap * p1_ratio * separation_factor;
-                player2->position.x += nx * overlap * p2_ratio * separation_factor;
-                player2->position.y += ny * overlap * p2_ratio * separation_factor;
+        // Apply collision impulse
+        float impulse = bounce_factor * vel_along_normal;
 
-                // Update rects
-                player1->rect.x = player1->position.x - PLAYER_SPRITE_WIDTH/2;
-                player1->rect.y = player1->position.y - PLAYER_SPRITE_HEIGHT/2;
-                player2->rect.x = player2->position.x - PLAYER_SPRITE_WIDTH/2;
-                player2->rect.y = player2->position.y - PLAYER_SPRITE_HEIGHT/2;
-            }
-
-            // Apply collision response to velocities (bounce effect)
-            float bounce_factor = 0.3f;
-
-            // Calculate relative velocity
-            float rel_vx = player2->velocity.x - player1->velocity.x;
-            float rel_vy = player2->velocity.y - player1->velocity.y;
-
-            // Calculate relative velocity along collision normal
-            float vel_along_normal = rel_vx * nx + rel_vy * ny;
-
-            // Only resolve if objects are moving towards each other
-            if (vel_along_normal > 0) return;
-
-            // Apply collision impulse
-            float impulse = bounce_factor * vel_along_normal;
-
-            player1->velocity.x += impulse * nx;
-            player1->velocity.y += impulse * ny;
-            player2->velocity.x -= impulse * nx;
-            player2->velocity.y -= impulse * ny;
-        }
+        player1->velocity.x += impulse * direction.x;
+        player1->velocity.y += impulse * direction.y;
+        player2->velocity.x -= impulse * direction.x;
+        player2->velocity.y -= impulse * direction.y;
     }
+
 }
 
-bool is_player_collision(Player* player1, Player* player2) {
-    // TODO: return true if players collide
-    SDL_Rect p1Rect = player1->rect;
-    SDL_Rect p2Rect = player2->rect;
-    return SDL_HasIntersection(&p1Rect, &p2Rect);
-}
-
-void process_shoot_collision(Player* player, Ball* ball) {
-    // TODO: handle player shooting ball
-    // for (auto* p : red_team) {
+void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
     SDL_Rect pRect = player->rect;
-    SDL_Rect bRect = ball->display_rect;
-    int space = 0;
-    if (SDL_HasIntersection(&pRect, &bRect)) {
-        // Đảm bảo bóng không đi xuyên người: dịch bóng ra ngoài cầu thủ
-        // need redefine
-        if (bRect.x < pRect.x) ball->change_x(pRect.x - ball->radius + space);
-        else if (bRect.x > pRect.x) ball->change_x(pRect.x + PLAYER_SIZE + ball->radius + space);
-        if (bRect.y < pRect.y) ball->change_y(pRect.y - ball->radius + space);
-        else if (bRect.y > pRect.y) ball->change_y(pRect.y + PLAYER_SIZE + ball->radius + space);
-        // need redefine
-        float dx = bRect.x - pRect.x;
-        float dy = bRect.y - pRect.y;
-        float mag = std::sqrt(dx*dx + dy*dy);
-        if (mag > 0) {
-            ball->velocity.x = player->velocity.x*3;
-            ball->velocity.y = player->velocity.y*3;
-        } else {
-            ball->velocity.x = -player->velocity.x*3;
-            ball->velocity.y = player->velocity.x*3;
-        }
-        ball->last_touch = player->team;
+    Circle bCircle = ball->circle;
+
+    // Find closest point on rect to circle center
+    float closestX = clamp(bCircle.x, (float)pRect.x, (float)(pRect.x + PLAYER_SIZE));
+    float closestY = clamp(bCircle.y, (float)pRect.y, (float)(pRect.y + PLAYER_SIZE));
+
+    // Vector from closest point to ball center
+    Vec2 delta(bCircle.x - closestX, bCircle.y - closestY);
+    float dist = delta.magnitude();
+
+    // Check for overlap
+    float overlap = ball->radius - dist;
+    if (overlap <= 0.0f) return; // no collision
+
+    // Normalization (direction)
+    Vec2 normal = delta.normalize();
+    // printf("%f, %f\n", normal.x, normal.y);
+
+    // Separate objects (prevent sinking) 
+    float separation_factor = 1.2f; // tweak this for stability
+    float player_ratio = 0.1f;      // how much player is pushed back
+    float ball_ratio   = 1.0f - player_ratio;
+
+    // Proposed new ball position
+    float newBallX = ball->position.x + normal.x * overlap * ball_ratio * separation_factor;
+    float newBallY = ball->position.y + normal.y * overlap * ball_ratio * separation_factor;
+
+    // Check if ball would go out of bounds
+    bool ballBlocked = (newBallX - ball->radius < 0) ||
+                    (newBallX + ball->radius > SCREEN_WIDTH) ||
+                    (newBallY - ball->radius < 0) ||
+                    (newBallY + ball->radius > SCREEN_HEIGHT);
+
+    player->change_position(
+        player->position.x - normal.x * overlap * player_ratio * separation_factor,
+        player->position.y - normal.y * overlap * player_ratio * separation_factor
+    );
+
+    ball->change_position(newBallX, newBallY);
+
+    // Velocity response (impulse)
+    // Relative velocity
+    Vec2 relVel = ball->velocity - player->velocity;
+    float velAlongNormal = relVel.x * normal.x + relVel.y * normal.y;
+    
+    float bounce = (game->map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH; // restitution (0 = no bounce, 1 = full bounce)
+
+    float impulse = -(1.0f + bounce) * velAlongNormal;
+    // You can divide by "mass" if you simulate it. For now we just apply to ball.
+    ball->velocity.x += impulse * normal.x;
+    ball->velocity.y += impulse * normal.y;
+
+    // Gameplay tweak (kick if player is fast) ---
+    float playerSpeed = player->velocity.magnitude();
+    if (playerSpeed > 250) { // strong shoot threshold
+        ball->velocity += normal * (playerSpeed * 0.5f); // add extra force
     }
-}
 
-bool is_player_shoot(Player* player, Ball* ball) {
-    // TODO: return true if player shoots ball
-    SDL_Rect pRect = player->rect;
-    SDL_Rect bRect = ball->display_rect;
-    return SDL_HasIntersection(&pRect, &bRect);
+    if (ballBlocked) ball->velocity*=-1;
 }
 
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {

@@ -25,24 +25,14 @@ void Ball::move(float dt)
     // Update particle system for comet trail
     updateParticles(dt, speed);
 
-    float bounce_damping = (game.map == MOON) ? 0.8f : 0.3f; // Ball bounces more on Moon
+    float bounce = (game.map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
     // position process:
-    if (display_rect.x <= 0 && velocity.x < 0) {
-        change_x(radius);
-        velocity.x = -velocity.x * bounce_damping;
-    }
-    if (display_rect.y <= 120 && velocity.y < 0) {
-        change_y(120 + radius);
-        velocity.y = -velocity.y * bounce_damping;
-    }
-    if (display_rect.x + radius*2 >= SCREEN_WIDTH && velocity.x > 0) {
-        change_x(SCREEN_WIDTH - radius);
-        velocity.x = -velocity.x * bounce_damping;
-    }
-    if (display_rect.y + radius*2 >= SCREEN_HEIGHT && velocity.y > 0) {
-        change_y(SCREEN_HEIGHT - radius);
-        velocity.y = -velocity.y * bounce_damping;
-    }
+    if (display_rect.x <=0) { change_x(1+radius); velocity.x = -velocity.x*(1-bounce); }
+    if (display_rect.y <=TOP_PADDING) { change_y(1+TOP_PADDING+radius); velocity.y = -velocity.y*(1-bounce); }
+    if (display_rect.x + radius*2 >= SCREEN_WIDTH)
+        { change_x(SCREEN_WIDTH - radius-1); velocity.x = -velocity.x*(1-bounce);}
+    if (display_rect.y + radius*2 >= SCREEN_HEIGHT)
+        { change_y(SCREEN_HEIGHT - radius-1); velocity.y = -velocity.y*(1-bounce);}
 
     // printf("Circle: position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 }
@@ -103,7 +93,7 @@ void Ball::updateParticles(float dt, float speed)
     }
 
     // Spawn new particles when ball is moving fast
-    if(speed > 15.0f) { // Add upper bound safety
+    if(speed > 5.0f) { // Add upper bound safety
         particle_spawn_timer += dt;
 
         // Spawn particles at ~30 FPS when moving fast
@@ -160,7 +150,7 @@ void Player::move(float dt)
     }
 
     // dx = x + dv
-    Vec2 new_position = position += velocity * dt;
+    Vec2 new_position = position + velocity * dt;
     change_position(new_position.x, new_position.y);
 
     // Calculate rotation and animation based on velocity
@@ -173,24 +163,15 @@ void Player::move(float dt)
         animation_time = 0.0f; // Reset animation when not moving
     }
 
-    float bounce_damping = (game.map == MOON) ? 0.7f : 0.0f; // Moon: bouncy, Earth: stop at walls
+    float bounce = (game.map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
     // position process:
-    if (rect.x <= 0 && velocity.x < 0) {
-        change_x(PLAYER_SPRITE_WIDTH/2.0);
-        velocity.x = -velocity.x * bounce_damping;
-    }
-    if (rect.y <= 120 && velocity.y < 0) {
-        change_y(120 + PLAYER_SPRITE_HEIGHT/2.0);
-        velocity.y = -velocity.y * bounce_damping;
-    }
-    if (rect.x + PLAYER_SPRITE_WIDTH >= SCREEN_WIDTH && velocity.x > 0) {
-        change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2.0);
-        velocity.x = -velocity.x * bounce_damping;
-    }
-    if (rect.y + PLAYER_SPRITE_HEIGHT >= SCREEN_HEIGHT && velocity.y > 0) {
-        change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2.0);
-        velocity.y = -velocity.y * bounce_damping;
-    }
+    // printf ("%d, %d\n", rect.x, rect.y);
+    if (rect.x <=0) { change_x(1+PLAYER_SPRITE_WIDTH/2); velocity.x = -velocity.x*(1-bounce); }
+    if (rect.y <=TOP_PADDING) { change_y(TOP_PADDING+1+PLAYER_SPRITE_HEIGHT/2); velocity.y = -velocity.y*(1-bounce); }
+    if (rect.x + PLAYER_SPRITE_WIDTH >= SCREEN_WIDTH)
+        { change_x(SCREEN_WIDTH - PLAYER_SPRITE_WIDTH/2 - 1); velocity.x = -velocity.x*(1-bounce);}
+    if (rect.y + PLAYER_SPRITE_HEIGHT >= SCREEN_HEIGHT)
+        { change_y(SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT/2 - 1); velocity.y = -velocity.y*(1-bounce);}
 
     // printf("position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 
@@ -200,13 +181,13 @@ void Player::move(float dt)
 void Player::change_x(int init_x)
 {
     position.x = init_x;
-    rect.x = init_x - PLAYER_SPRITE_WIDTH/2.0;
+    rect.x = init_x - PLAYER_SPRITE_WIDTH/2;
 }
 
 void Player::change_y(int init_y)
 {
     position.y = init_y;
-    rect.y = init_y - PLAYER_SPRITE_HEIGHT/2.0;
+    rect.y = init_y - PLAYER_SPRITE_HEIGHT/2;
 }
 
 void Player::change_position(int init_x, int init_y)

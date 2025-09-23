@@ -57,6 +57,7 @@ int main(int argc, char* args[])
                     }
                     break;
                 case CHOOSE_MAP: event_handler_choose_map(&event, &state); break;
+                case SCORING: event_handler_scoring(&event); break;
                 case PLAYING:
                     // Pause with ESC
                     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
@@ -64,7 +65,7 @@ int main(int argc, char* args[])
                         pause_selection = 0;
                         break;
                     }
-                    event_handler_playing(&event);
+                    event_handler_playing(&game, &event);
                     break;
                 case PAUSE:
                     if (event.type == SDL_KEYDOWN) {
@@ -92,8 +93,7 @@ int main(int argc, char* args[])
                         }
                     }
                     break;
-                case SCORING:
-                    // event_handler_scoring(&event);
+                default:
                     break;
             }
         }
@@ -259,16 +259,31 @@ void event_handler_menu(SDL_Event * event, GAME_STATE* state)
     }
 }
 
-void event_handler_playing(SDL_Event* event)
+void event_handler_playing(Gameplay * game, SDL_Event* event)
 {
     // Handle half-time break resume
-    if (event->type == SDL_KEYDOWN && game.half_time_break) {
-        game.resume_second_half();
+    if (event->type == SDL_KEYDOWN && game->half_time_break) {
+        game->resume_second_half();
         return;
     }
 
     // Process Smooth Moving
-
+    if (event->type == SDL_KEYDOWN)
+    {
+        switch( event->key.keysym.sym )
+        {
+            case SDLK_f:
+                game->red.change_control();
+                break;
+            case SDLK_RCTRL:
+                if (game->mode == PVP)
+                    game->blue.change_control();
+                break;
+            default:
+                break;
+        }
+    }
+    
 }
 void event_handler_pause(SDL_Event * event)
 {
