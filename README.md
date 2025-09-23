@@ -4,6 +4,8 @@ A 2D physics-based soccer game built with C++ and SDL2, featuring gameplay acros
 
 ## Overview
 
+![game](samp_img.png)
+
 Space Football is a team-based soccer game where players compete on different celestial bodies - Earth, Moon, and Space/Mars. Each environment features distinct physics properties that affect player movement and ball behavior, creating varied gameplay experiences.
 
 ## Features

@@ -19,3 +19,5 @@ void event_handler_scoring(SDL_Event * event);
 
 void draw_menu(SDL_Window* window, SDL_Renderer* renderer);
 void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer);
+void draw_pause(SDL_Window* window, SDL_Renderer* renderer, int selection);
+void draw_result(SDL_Window* window, SDL_Renderer* renderer, int winner, int selection);

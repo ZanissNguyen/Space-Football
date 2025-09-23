@@ -141,6 +141,14 @@ void Player::move(float dt)
     velocity += acceleration * dt * accel_scale;
     velocity *= (1.0f - friction * dt);
 
+    // Apply max speed limit
+    float speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    if (speed > MAX_PLAYER_SPEED) {
+        float scale = MAX_PLAYER_SPEED / speed;
+        velocity.x *= scale;
+        velocity.y *= scale;
+    }
+
     // dx = x + dv
     Vec2 new_position = position + velocity * dt;
     change_position(new_position.x, new_position.y);
