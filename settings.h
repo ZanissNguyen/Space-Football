@@ -89,3 +89,5 @@ extern const float FRICTION_MOON;
 
 extern const float BOUNCE_FACTOR_EARTH;
 extern const float BOUNCE_FACTOR_MOON;
+
+extern const int SHOOT_THRESHOLD;
