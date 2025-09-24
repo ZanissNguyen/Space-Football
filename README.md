@@ -42,10 +42,22 @@ cd Space-Football
 
 ## Building and Running
 
-### Build the Game
+### Using Makefile (Recommended)
+
+The project includes a Makefile for easier compilation (use `make` or `mingw32-make`):
 
 ```bash
-g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp -I include\SDL2 -Llib -lmingw32 -lSDL2main -lSDL2
+mingw32-make          # Build the game (incremental compilation)
+mingw32-make run      # Build and run the game
+mingw32-make clean    # Remove build files
+mingw32-make rebuild  # Clean build from scratch
+mingw32-make help     # Show available commands
+```
+
+### Manual Build (Alternative)
+
+```bash
+g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp artist.cpp -Iinclude\SDL2 -Llib -lmingw32 -lSDL2main -lSDL2
 ```
 
 ### Run the Game
