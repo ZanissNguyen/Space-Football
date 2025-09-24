@@ -49,5 +49,8 @@ const float FRICTION_EARTH = 3.0f;
 const float FRICTION_MOON = 1.5f;
 
 // bounce constant (xử lý vận tốc khi chạm vào bo màn hình)
+// the larger factor the smaller velocity
 const float BOUNCE_FACTOR_EARTH = 0.667f;
 const float BOUNCE_FACTOR_MOON = 0.333f;
+
+const int SHOOT_THRESHOLD = 300;

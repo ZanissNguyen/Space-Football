@@ -307,11 +307,11 @@ void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
                     selected_map = (map_selection == 0) ? EARTH : MOON;
                     // Initialize game with selected settings
                     std::vector<Player*> players_red;
-                    players_red.push_back(new Player(0,0,RED));
-                    players_red.push_back(new Player(0,0,RED));
+                    players_red.push_back(new Striker(0,0,RED, ""));
+                    players_red.push_back(new Defender(0,0,RED, ""));
                     std::vector<Player*> players_blue;
-                    players_blue.push_back(new Player(0,0,BLUE));
-                    players_blue.push_back(new Player(0,0,BLUE));
+                    players_blue.push_back(new Striker(0,0,BLUE, ""));
+                    players_blue.push_back(new Defender(0,0,BLUE, ""));
                     game.init(selected_map, players_red, players_blue);
                     game.mode = selected_mode;
                     *state = PLAYING;

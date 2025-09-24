@@ -77,4 +77,9 @@ public:
 void process_player_collision(Gameplay * game, Player * player1, Player * player2);
 void process_shoot_collision(Gameplay * game, Player* player, Ball * ball);
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score);
+bool is_in_opponent_field(Player * player);
 
+void process_player_hit_border(Gameplay* game, Player * player);
+void process_ball_hit_border(Gameplay * game, Ball * ball);
+Player * player_hold_ball(Gameplay * game);
+Player * get_teammate(Player * player, Gameplay * game);

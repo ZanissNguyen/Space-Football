@@ -21,6 +21,8 @@ public:
 
 float dot(const Vec2& a, const Vec2& b);
 
+Vec2 rotate(const Vec2& v, float degrees);
+
 class Circle {
 public:
     float x,y,r;

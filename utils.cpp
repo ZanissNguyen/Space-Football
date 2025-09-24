@@ -24,3 +24,15 @@ float dot(const Vec2& a, const Vec2&b)
 {
     return a.x*b.x + a.y*b.y;
 }
+
+Vec2 rotate(const Vec2&v, float degrees)
+{
+    float radians = degrees * M_PI / 180.0f; // convert to radians
+    float cosA = std::cos(radians);
+    float sinA = std::sin(radians);
+
+    return Vec2(
+        v.x * cosA - v.y * sinA,
+        v.x * sinA + v.y * cosA
+    );
+}
