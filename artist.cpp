@@ -554,8 +554,8 @@ void draw_text(const std::string& text, int x, int y, SDL_Window* window, SDL_Re
 
     const int CHAR_WIDTH = 70;
     const int CHAR_HEIGHT = 80;
-    const int CHAR_RENDER_WIDTH = 40; // Use center 40px of 70px cell
-    const int CHAR_OFFSET_X = 15; // Start 15px from left to center the 40px
+    const int CHAR_RENDER_WIDTH = 45; // Use center 40px of 70px cell
+    const int CHAR_OFFSET_X = 10; // Start 15px from left to center the 40px
     const int COLS = 16;
 
     int current_x = x;
@@ -633,8 +633,8 @@ void draw_text_white(const std::string& text, int x, int y, SDL_Window* window, 
 
     const int CHAR_WIDTH = 70;
     const int CHAR_HEIGHT = 80;
-    const int CHAR_RENDER_WIDTH = 40; // Use center 40px of 70px cell
-    const int CHAR_OFFSET_X = 15; // Start 15px from left to center the 40px
+    const int CHAR_RENDER_WIDTH = 45; // Use center 40px of 70px cell
+    const int CHAR_OFFSET_X = 10; // Start 15px from left to center the 40px
     const int COLS = 16;
 
     int current_x = x;
