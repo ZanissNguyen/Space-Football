@@ -63,7 +63,8 @@ void Gameplay::process(float delay) {
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
         // printf ("%d\n", red.active_player);
-        if (i!=red.active_player) red.members[i]->AI_Support(this);
+        // if (i!=red.active_player)
+        red.members[i]->AI_Support(this);
         if (mode == PVP)
         {
             if (i!=blue.active_player)
@@ -508,6 +509,21 @@ Player * get_teammate(Player * player, Gameplay * game)
     }
 }
 
+Player * get_closest_opponent(Player * player, Gameplay * game)
+{
+    if (player->team == RED)
+    {
+        float player1_distance = Vec2(game->blue.members[0]->position - player->position).magnitude();
+        float player2_distance = Vec2(game->blue.members[1]->position - player->position).magnitude();
+        return (player1_distance < player2_distance) ? game->blue.members[0] : game->blue.members[1];
+    }
+    else
+    {
+        float player1_distance = Vec2(game->red.members[0]->position - player->position).magnitude();
+        float player2_distance = Vec2(game->red.members[1]->position - player->position).magnitude();
+        return (player1_distance < player2_distance) ? game->red.members[0] : game->red.members[1];
+    }
+}
 
 void process_player_hit_goalposts(Gameplay * game, Player * player)
 {

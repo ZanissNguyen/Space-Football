@@ -23,17 +23,6 @@ void Ball::move(Gameplay * game, float dt)
 
     // Update particle system for comet trail
     updateParticles(dt, speed);
-
-    // float bounce = (game.map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
-    // // position process:
-    // if (display_rect.x <=0) { change_x(1+radius); velocity.x = -velocity.x*(1-bounce); }
-    // if (display_rect.y <=TOP_PADDING) { change_y(1+TOP_PADDING+radius); velocity.y = -velocity.y*(1-bounce); }
-    // if (display_rect.x + radius*2 >= SCREEN_WIDTH)
-    //     { change_x(SCREEN_WIDTH - radius-1); velocity.x = -velocity.x*(1-bounce);}
-    // if (display_rect.y + radius*2 >= SCREEN_HEIGHT)
-    //     { change_y(SCREEN_HEIGHT - radius-1); velocity.y = -velocity.y*(1-bounce);}
-
-    // printf("Circle: position (%f, %f) | vel (%f, %f)\n", position.x, position.y, velocity.x, velocity.y);
 }
 
 void Ball::setRadius(float init_r)
@@ -198,10 +187,7 @@ void Striker::AI_Support(Gameplay * game)
             (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING);
         Vec2 ball_to_goal = Vec2(opponent_goal.x - ball->position.x
             , opponent_goal.y - ball->position.y);
-        
         Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
-        // Vec2(ball->position.x - ball_to_goal.x * BALL_SIZE,
-        // ball->position.y - ball_to_goal.y * BALL_SIZE);
 
         Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
@@ -248,128 +234,73 @@ void Striker::AI_Support(Gameplay * game)
 void Defender::AI_Support(Gameplay * game)
 {
     // state don't have ball 
-    // chasing opponent player that have ball
+    //  chasing opponent player that have ball
     // if is the player closest ball, find spot into opponent goal
     // if close enough chasing the ball
-    // Ball * ball = &game->ball;
-    // Player * closest_ball = player_hold_ball(game);
-    // if (closest_ball == this) // already closest to the ball, find a spot to control/shoot
-    // {
-    //     Player * teammate = get_teammate(this, game);
-    //     Vec2 ball_to_mate = Vec2(teammate->position.x - ball->position.x
-    //         , teammate->position.y - ball->position.y).normalize();
-        
-    //     Vec2 spot_to_shoot = Vec2(ball->position.x - ball_to_mate.x * BALL_SIZE,
-    //     ball->position.y - ball_to_mate.y * BALL_SIZE);
+    Ball * ball = &game->ball;
+    Player * closest_ball = player_hold_ball(game);
+    if (closest_ball == this) // already closest to the ball, find a spot to control/shoot
+    {
+        // like striker logic
+        Vec2 opponent_goal = Vec2((team == RED) ? SCREEN_WIDTH : 0,
+            (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING);
+        Vec2 ball_to_goal = Vec2(opponent_goal.x - ball->position.x
+            , opponent_goal.y - ball->position.y);
+        Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
 
-    //     Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
+        Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
-    //     float alignment = dot(ball_to_mate.normalize(), Vec2(ball->position.x- position.x, ball->position.y-position.y).normalize());
-
-    //     if (alignment > 0.2f) {
-    //         // Already on good side -> prepare to shoot
-    //         Vec2 spot_to_shoot = ball->position - ball_to_mate * BALL_SIZE;
-    //         Vec2 direction = (spot_to_shoot - position).normalize();
-    //         acceleration = direction * BASE_ACCELERATION;
-    //     } 
-    //     else {
-    //         // Reposition around ball (support spot behind it)
-    //         Vec2 support_spot = ball->position - ball_to_mate * 2.0f * BALL_SIZE;
-    //         Vec2 direction = (support_spot - position).normalize();
-    //         float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
-    //         Vec2 direction2 = rotate(direction, 30.0f * opr);
-    //         acceleration = direction2 * BASE_ACCELERATION;
-    //     }
+        float alignment = dot(ball_to_goal.normalize(), (ball->position - position).normalize());
+        if (alignment > 0.18f) {
+            // Already on good side -> prepare to shoot
+            Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
+            Vec2 direction = (spot_to_shoot - position).normalize();
+            acceleration = direction * BASE_ACCELERATION;
+        } 
+        else {
+            // Reposition around ball (support spot behind it)
+            Vec2 support_spot = ball->position - ball_to_goal.normalize() * 2.0f * BALL_SIZE;
+            Vec2 direction = (support_spot - position).normalize();
+            float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
+            Vec2 direction2 = rotate(direction, 40.0f * opr);
+            acceleration = direction2 * BASE_ACCELERATION;
+        }
     
-    // }
-    // else // other player hold ball
-    // {
-    //     if (closest_ball->team != team)
-    //     {
-    //         Vec2 predicted_position = (ball->position + closest_ball->velocity*0);
-    //         Vec2 direction = Vec2(ball->position.x - position.x, 
-    //             ball->position.y - position.y).normalize();
+    }
+    else // other player hold ball
+    {
+        if (closest_ball->team != team)
+        {
+            Vec2 our_goal = Vec2((team == RED) ? 0 : SCREEN_WIDTH,
+                (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING);
+            Vec2 opponent_position = closest_ball->position;
+            Vec2 opponent_to_goal = our_goal - opponent_position;
 
-    //         acceleration = direction * BASE_ACCELERATION;
-    //         return;
-    //     }
-    //     else // your teammate hold the ball
-    //     {
-    //         float our_x = (team==RED) ? SCREEN_WIDTH/4 : SCREEN_WIDTH*3/4;
-    //         Vec2 spot = Vec2(our_x, ball->position.y);
-    //         Vec2 direction = Vec2(spot.x - position.x, 
-    //             spot.y - position.y).normalize();
+            Vec2 defend_position = opponent_position + opponent_to_goal * 0.5f;
+            Vec2 direction = (defend_position - position).normalize();
 
-    //         acceleration = direction * BASE_ACCELERATION;
-    //         return;
-    //     }
-    // }
+            acceleration = direction * BASE_ACCELERATION;
+            return;
+        }
+        else // your teammate hold the ball
+        {
+            // find closest opponent player and go to defend spot between opponent and your goal
+            Vec2 our_goal = Vec2((team == RED) ? 0 : SCREEN_WIDTH,
+                (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING);
+            Vec2 opponent_position = get_closest_opponent(this, game)->position;
+            Vec2 opponent_to_goal = our_goal - opponent_position;
+
+            float opr = ((opponent_to_goal.magnitude() < (position-our_goal).magnitude())) 
+                ? 1.0f : -1.0f;
+
+            Vec2 defend_position = opponent_position + opponent_to_goal * 0.5f * opr;
+            Vec2 direction = (defend_position - position).normalize();
+
+            acceleration = direction * BASE_ACCELERATION;
+            return;
+        }
+    }
 }
-
-// void GameAI::updateAI(Player* aiPlayer, Ball* ball, int team, int fieldWidth, int fieldHeight, bool ballInPlay) {
-//     SDL_Rect playerRect = aiPlayer->getRect();
-//     SDL_Rect ballRect = ball->getRect();
-//     int dx = ballRect.x - playerRect.x;
-//     int dy = ballRect.y - playerRect.y;
-//     float dist = std::sqrt(dx*dx + dy*dy);
-//     if (ballInPlay && dist < 60) {
-//         // Nếu gần bóng và bóng đang lăn, ưu tiên tấn công (di chuyển về phía khung thành đối phương)
-//         int targetX = (team == 2) ? 10 : fieldWidth - 60;
-//         int targetY = ballRect.y;
-//         int tx = targetX - playerRect.x;
-//         int ty = targetY - playerRect.y;
-//         if (std::abs(tx) > 5) aiPlayer->move((tx > 0) ? 2 : -2, 0);
-//         if (std::abs(ty) > 5) aiPlayer->move(0, (ty > 0) ? 2 : -2);
-//     } else {
-//         // Nếu không có bóng, di chuyển về phía bóng
-//         if (dist > 5) {
-//             aiPlayer->move((dx > 0) ? 2 : (dx < 0) ? -2 : 0, (dy > 0) ? 2 : (dy < 0) ? -2 : 0);
-//         }
-//     }
-// }
-
-// void GameAI::supportAI(Player* supportPlayer, Ball* ball, int team, int fieldWidth, int fieldHeight, bool ballInPlay) {
-//     // AI hỗ trợ: di chuyển về vị trí phòng thủ/hỗ trợ
-//     int targetX = (team == 1) ? fieldWidth/4 : 3*fieldWidth/4;
-//     int targetY = fieldHeight/2;
-//     SDL_Rect playerRect = supportPlayer->getRect();
-//     int dx = targetX - playerRect.x;
-//     int dy = targetY - playerRect.y;
-//     if (std::abs(dx) > 5) supportPlayer->move((dx > 0) ? 1 : -1, 0);
-//     if (std::abs(dy) > 5) supportPlayer->move(0, (dy > 0) ? 1 : -1);
-// }
-
-// void GameAI::pressingAI(Player* presser, Ball* ball, const std::vector<Player*>& opponents, int fieldWidth, int fieldHeight) {
-//     // Tìm cầu thủ đối phương gần bóng nhất
-//     Player* target = nullptr;
-//     float minDist = 1e9;
-//     SDL_Rect ballRect = ball->getRect();
-//     for (auto* opp : opponents) {
-//         SDL_Rect oRect = opp->getRect();
-//         float dx = oRect.x - ballRect.x;
-//         float dy = oRect.y - ballRect.y;
-//         float dist = std::sqrt(dx*dx + dy*dy);
-//         if (dist < minDist) { minDist = dist; target = opp; }
-//     }
-//     if (target) {
-//         SDL_Rect pRect = presser->getRect();
-//         int dx = target->x - pRect.x;
-//         int dy = target->y - pRect.y;
-//         if (std::abs(dx) > 5) presser->move((dx > 0) ? 2 : -2, 0);
-//         if (std::abs(dy) > 5) presser->move(0, (dy > 0) ? 2 : -2);
-//     }
-// }
-
-// void GameAI::runSupportAI(Player* runner, Ball* ball, int team, int fieldWidth, int fieldHeight) {
-//     // Khi có bóng, cầu thủ còn lại chạy chỗ về phía khung thành đối phương
-//     int targetX = (team == 1) ? fieldWidth - 100 : 100;
-//     int targetY = (ball->y < fieldHeight/2) ? fieldHeight - 100 : 100;
-//     SDL_Rect pRect = runner->getRect();
-//     int dx = targetX - pRect.x;
-//     int dy = targetY - pRect.y;
-//     if (std::abs(dx) > 5) runner->move((dx > 0) ? 2 : -2, 0);
-//     if (std::abs(dy) > 5) runner->move(0, (dy > 0) ? 2 : -2);
-// }
 
 void EffectManager::ApplyEffect(Uint32 duration, EffectFunc applyFunc, EffectFunc expiredFunc, void* object) {
     // Apply immediately
