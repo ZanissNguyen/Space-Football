@@ -57,7 +57,7 @@ mingw32-make help     # Show available commands
 ### Manual Build (Alternative)
 
 ```bash
-g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp artist.cpp -Iinclude\SDL2 -Llib -lmingw32 -lSDL2main -lSDL2
+g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp artist.cpp -Iinclude -Llib -lmingw32 -lSDL2main -lSDL2
 ```
 
 ### Run the Game
