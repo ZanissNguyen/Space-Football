@@ -205,7 +205,7 @@ void Striker::AI_Support(Gameplay * game)
         Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
         float alignment = dot(ball_to_goal.normalize(), Vec2(ball->position.x- position.x, ball->position.y-position.y).normalize());
-        if (alignment > 0.2f) {
+        if (alignment > 0.18f) {
             // Already on good side -> prepare to shoot
             Vec2 spot_to_shoot = ball->position - ball_to_goal * BALL_SIZE;
             Vec2 direction = (spot_to_shoot - position).normalize();
@@ -250,59 +250,59 @@ void Defender::AI_Support(Gameplay * game)
     // chasing opponent player that have ball
     // if is the player closest ball, find spot into opponent goal
     // if close enough chasing the ball
-    Ball * ball = &game->ball;
-    Player * closest_ball = player_hold_ball(game);
-    if (closest_ball == this) // already closest to the ball, find a spot to control/shoot
-    {
-        Player * teammate = get_teammate(this, game);
-        Vec2 ball_to_mate = Vec2(teammate->position.x - ball->position.x
-            , teammate->position.y - ball->position.y).normalize();
+    // Ball * ball = &game->ball;
+    // Player * closest_ball = player_hold_ball(game);
+    // if (closest_ball == this) // already closest to the ball, find a spot to control/shoot
+    // {
+    //     Player * teammate = get_teammate(this, game);
+    //     Vec2 ball_to_mate = Vec2(teammate->position.x - ball->position.x
+    //         , teammate->position.y - ball->position.y).normalize();
         
-        Vec2 spot_to_shoot = Vec2(ball->position.x - ball_to_mate.x * BALL_SIZE,
-        ball->position.y - ball_to_mate.y * BALL_SIZE);
+    //     Vec2 spot_to_shoot = Vec2(ball->position.x - ball_to_mate.x * BALL_SIZE,
+    //     ball->position.y - ball_to_mate.y * BALL_SIZE);
 
-        Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
+    //     Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
-        float alignment = dot(ball_to_mate.normalize(), Vec2(ball->position.x- position.x, ball->position.y-position.y).normalize());
+    //     float alignment = dot(ball_to_mate.normalize(), Vec2(ball->position.x- position.x, ball->position.y-position.y).normalize());
 
-        if (alignment > 0.2f) {
-            // Already on good side -> prepare to shoot
-            Vec2 spot_to_shoot = ball->position - ball_to_mate * BALL_SIZE;
-            Vec2 direction = (spot_to_shoot - position).normalize();
-            acceleration = direction * BASE_ACCELERATION;
-        } 
-        else {
-            // Reposition around ball (support spot behind it)
-            Vec2 support_spot = ball->position - ball_to_mate * 2.0f * BALL_SIZE;
-            Vec2 direction = (support_spot - position).normalize();
-            float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
-            Vec2 direction2 = rotate(direction, 30.0f * opr);
-            acceleration = direction2 * BASE_ACCELERATION;
-        }
+    //     if (alignment > 0.2f) {
+    //         // Already on good side -> prepare to shoot
+    //         Vec2 spot_to_shoot = ball->position - ball_to_mate * BALL_SIZE;
+    //         Vec2 direction = (spot_to_shoot - position).normalize();
+    //         acceleration = direction * BASE_ACCELERATION;
+    //     } 
+    //     else {
+    //         // Reposition around ball (support spot behind it)
+    //         Vec2 support_spot = ball->position - ball_to_mate * 2.0f * BALL_SIZE;
+    //         Vec2 direction = (support_spot - position).normalize();
+    //         float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
+    //         Vec2 direction2 = rotate(direction, 30.0f * opr);
+    //         acceleration = direction2 * BASE_ACCELERATION;
+    //     }
     
-    }
-    else // other player hold ball
-    {
-        if (closest_ball->team != team)
-        {
-            Vec2 predicted_position = (ball->position + closest_ball->velocity*0);
-            Vec2 direction = Vec2(ball->position.x - position.x, 
-                ball->position.y - position.y).normalize();
+    // }
+    // else // other player hold ball
+    // {
+    //     if (closest_ball->team != team)
+    //     {
+    //         Vec2 predicted_position = (ball->position + closest_ball->velocity*0);
+    //         Vec2 direction = Vec2(ball->position.x - position.x, 
+    //             ball->position.y - position.y).normalize();
 
-            acceleration = direction * BASE_ACCELERATION;
-            return;
-        }
-        else // your teammate hold the ball
-        {
-            float our_x = (team==RED) ? SCREEN_WIDTH/4 : SCREEN_WIDTH*3/4;
-            Vec2 spot = Vec2(our_x, ball->position.y);
-            Vec2 direction = Vec2(spot.x - position.x, 
-                spot.y - position.y).normalize();
+    //         acceleration = direction * BASE_ACCELERATION;
+    //         return;
+    //     }
+    //     else // your teammate hold the ball
+    //     {
+    //         float our_x = (team==RED) ? SCREEN_WIDTH/4 : SCREEN_WIDTH*3/4;
+    //         Vec2 spot = Vec2(our_x, ball->position.y);
+    //         Vec2 direction = Vec2(spot.x - position.x, 
+    //             spot.y - position.y).normalize();
 
-            acceleration = direction * BASE_ACCELERATION;
-            return;
-        }
-    }
+    //         acceleration = direction * BASE_ACCELERATION;
+    //         return;
+    //     }
+    // }
 }
 
 // void GameAI::updateAI(Player* aiPlayer, Ball* ball, int team, int fieldWidth, int fieldHeight, bool ballInPlay) {
