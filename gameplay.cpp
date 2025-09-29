@@ -63,8 +63,8 @@ void Gameplay::process(float delay) {
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
         // printf ("%d\n", red.active_player);
-        // if (i!=red.active_player)
-        red.members[i]->AI_Support(this);
+        if (i!=red.active_player)
+            red.members[i]->AI_Support(this);
         if (mode == PVP)
         {
             if (i!=blue.active_player)
