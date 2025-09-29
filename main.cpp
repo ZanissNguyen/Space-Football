@@ -180,14 +180,6 @@ bool game_initialize()
         printf("Failed to initialize!\n");
         return false;
     }
-    // else
-    // {
-    //     //Load media
-    //     if( !load_media() )
-    //     {
-    //         printf( "Failed to load media!\n" );
-    //     }
-    // }
     return true;
 }
 
@@ -314,7 +306,7 @@ void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
                     players_blue.push_back(new Defender(0,0,BLUE, ""));
                     game.init(selected_map, players_red, players_blue);
                     game.mode = selected_mode;
-                    *state = PLAYING;
+                    *state = CHOOSE_PLAYER;
                     break;
                 }
             case SDLK_ESCAPE:
