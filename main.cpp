@@ -1,13 +1,9 @@
 #include "main.h"
 #include <iomanip>
 
-//The window we'll be rendering to
-SDL_Window* window = NULL;
-
-// Create renderer
-SDL_Renderer* renderer = NULL;
-
 Gameplay game; // Make game global for event handlers
+SDL_Window * window = NULL;
+SDL_Renderer * renderer = NULL;
 
 // Menu state variables
 GAME_MODE selected_mode = PVP;
@@ -204,21 +200,9 @@ bool library_init()
     else
     {
         //Create window
-        window = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-        if(window == NULL )
-        {
-            printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
-            success = false;
-        }
-
-        // Create renderer
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        if (!renderer) {
-            printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
-            SDL_DestroyWindow(window);
-            SDL_Quit();
-            return 1;
-        }
+        RendererManager::init("Tiny Football", SCREEN_WIDTH, SCREEN_HEIGHT);
+        window = RendererManager::getWindow();
+        renderer = RendererManager::getRenderer();
     }
 
     return success;
@@ -227,11 +211,7 @@ bool library_init()
 void close()
 {
     //Destroy window
-    SDL_DestroyWindow(window);
-    window = NULL;
-
-    SDL_DestroyRenderer(renderer);
-    renderer = NULL;
+    RendererManager::cleanup();
 
     //Quit SDL subsystems
     SDL_Quit();

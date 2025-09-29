@@ -197,26 +197,27 @@ void Striker::AI_Support(Gameplay * game)
         Vec2 opponent_goal = Vec2((team == RED) ? SCREEN_WIDTH : 0,
             (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING);
         Vec2 ball_to_goal = Vec2(opponent_goal.x - ball->position.x
-            , opponent_goal.y - ball->position.y).normalize();
+            , opponent_goal.y - ball->position.y);
         
-        Vec2 spot_to_shoot = Vec2(ball->position.x - ball_to_goal.x * BALL_SIZE,
-        ball->position.y - ball_to_goal.y * BALL_SIZE);
+        Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
+        // Vec2(ball->position.x - ball_to_goal.x * BALL_SIZE,
+        // ball->position.y - ball_to_goal.y * BALL_SIZE);
 
         Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
-        float alignment = dot(ball_to_goal.normalize(), Vec2(ball->position.x- position.x, ball->position.y-position.y).normalize());
+        float alignment = dot(ball_to_goal.normalize(), (ball->position - position).normalize());
         if (alignment > 0.18f) {
             // Already on good side -> prepare to shoot
-            Vec2 spot_to_shoot = ball->position - ball_to_goal * BALL_SIZE;
+            Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
             Vec2 direction = (spot_to_shoot - position).normalize();
             acceleration = direction * BASE_ACCELERATION;
         } 
         else {
             // Reposition around ball (support spot behind it)
-            Vec2 support_spot = ball->position - ball_to_goal * 2.0f * BALL_SIZE;
+            Vec2 support_spot = ball->position - ball_to_goal.normalize() * 2.0f * BALL_SIZE;
             Vec2 direction = (support_spot - position).normalize();
             float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
-            Vec2 direction2 = rotate(direction, 30.0f * opr);
+            Vec2 direction2 = rotate(direction, 40.0f * opr);
             acceleration = direction2 * BASE_ACCELERATION;
         }
     
