@@ -1,14 +1,47 @@
 #include "artist.h"
 
 // this file draw things
+void draw_active_player_indicator(Player* player, SDL_Window* window, SDL_Renderer* renderer) {
+    // Draw a triangle above the active player
+    int indicator_x = player->rect.x + PLAYER_SPRITE_WIDTH/2;
+    int indicator_y = player->rect.y - 20;
+    int triangle_size = 8;
+
+    // Set color based on team
+    if (player->team == RED) {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+    } else {
+        SDL_SetRenderDrawColor(renderer, 0, 100, 255, 255); // Blue
+    }
+
+    // Draw filled triangle (pointing down towards player)
+    for (int i = 0; i < triangle_size; i++) {
+        SDL_RenderDrawLine(renderer,
+                          indicator_x - (triangle_size - 1 - i), indicator_y + i,
+                          indicator_x + (triangle_size - 1 - i), indicator_y + i);
+    }
+}
+
 void draw_game(Gameplay * game, SDL_Window * window, SDL_Renderer * renderer)
 {
+    // Set gray background
+    SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+    SDL_RenderClear(renderer);
+
     draw_field(window, renderer);
 
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
         draw_player(game->red.members[i], window, renderer);
         draw_player(game->blue.members[i], window, renderer);
+
+        // Draw indicator for active players
+        if (i == game->red.active_player) {
+            draw_active_player_indicator(game->red.members[i], window, renderer);
+        }
+        if (i == game->blue.active_player) {
+            draw_active_player_indicator(game->blue.members[i], window, renderer);
+        }
     }
 
     draw_ball(&(game->ball), window, renderer);
@@ -190,6 +223,32 @@ void draw_player(Player* player, SDL_Window* window, SDL_Renderer* renderer)
 
 void draw_field(SDL_Window * window, SDL_Renderer * renderer)
 {
+    // Draw stadium background first
+    static SDL_Texture* stadium_texture = nullptr;
+    if (!stadium_texture) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "standium.bmp";
+        stadium_texture = getTexture(window, renderer, ospath.str());
+    }
+
+    if (stadium_texture) {
+        // Original dimensions: W=1359, H=413
+        int original_width = 1359;
+        int original_height = 413;
+
+        // Scale to fit TOP_PADDING height while maintaining aspect ratio
+        float scale = (float)TOP_PADDING / original_height;  // 128 / 413
+        int scaled_width = (int)(original_width * scale);    // 1359 * scale
+        int scaled_height = TOP_PADDING;                     // 128
+
+        // Tile the stadium horizontally across the screen
+        int tiles_needed = (SCREEN_WIDTH + scaled_width - 1) / scaled_width;
+        for (int i = 0; i < tiles_needed; i++) {
+            SDL_Rect dst_rect = {i * scaled_width, 0, scaled_width, scaled_height};
+            SDL_RenderCopy(renderer, stadium_texture, NULL, &dst_rect);
+        }
+    }
+
     // Static texture to avoid loading every frame
 
     // Use static textures for each map
