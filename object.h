@@ -204,3 +204,18 @@ public:
         toughness = 3;
     }  
 };
+
+class EffectManager {
+public:
+    using EffectFunc = std::function<void(void*)>;
+
+    static void ApplyEffect(Uint32 duration, EffectFunc applyFunc, EffectFunc expiredFunc, void* object);
+
+private:
+    struct EffectData {
+        EffectFunc expired;
+        void* object;
+    };
+
+    static Uint32 TimerCallback(Uint32 interval, void* param);
+};

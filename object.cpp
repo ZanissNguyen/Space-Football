@@ -369,3 +369,26 @@ void Defender::AI_Support(Gameplay * game)
 //     if (std::abs(dx) > 5) runner->move((dx > 0) ? 2 : -2, 0);
 //     if (std::abs(dy) > 5) runner->move(0, (dy > 0) ? 2 : -2);
 // }
+
+void EffectManager::ApplyEffect(Uint32 duration, EffectFunc applyFunc, EffectFunc expiredFunc, void* object) {
+    // Apply immediately
+    applyFunc(object);
+
+    // Prepare data for callback
+    EffectData* data = new EffectData{expiredFunc, object};
+
+    // Schedule expiration after duration
+    SDL_AddTimer(duration, TimerCallback, data);
+}
+
+Uint32 EffectManager::TimerCallback(Uint32 interval, void* param) {
+    EffectData* data = static_cast<EffectData*>(param);
+
+    // Call the expired function
+    data->expired(data->object);
+
+    // Cleanup
+    delete data;
+
+    return 0; // do not repeat
+}

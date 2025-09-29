@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <functional>
 
 enum ERROR_CODE {
     IMAGE_NOT_FOUND = 0,

@@ -14,6 +14,7 @@ GAME_MODE selected_mode = PVP;
 GAME_MAP selected_map = EARTH;
 int menu_selection = 0; // 0 = PvP, 1 = PvE
 int map_selection = 0;  // 0 = Earth, 1 = Moon
+int player_selection = 0; // 0 = Striker, 1 = Defender
 
 int main(int argc, char* args[])
 {
@@ -57,7 +58,8 @@ int main(int argc, char* args[])
                     }
                     break;
                 case CHOOSE_MAP: event_handler_choose_map(&event, &state); break;
-                case SCORING: event_handler_scoring(&event); break;
+                case CHOOSE_PLAYER: event_handler_choose_player(&event, &state); break;
+                case SCORING: event_handler_scoring(&event, &state); break;
                 case PLAYING:
                     // Pause with ESC
                     if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
@@ -86,8 +88,10 @@ int main(int argc, char* args[])
                             result_selection = 1 - result_selection;
                         } else if (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_SPACE) {
                             if (result_selection == 0) {
+                                event_handler_scoring(&event, &state);
                                 state = CHOOSE_MAP;
                             } else {
+                                event_handler_scoring(&event, &state);
                                 state = MENU;
                             }
                         }
@@ -146,6 +150,9 @@ int main(int argc, char* args[])
                 break;
             case CHOOSE_MAP:
                 draw_choose_map(window, renderer);
+                break;
+            case CHOOSE_PLAYER:
+                draw_choose_player(window, renderer);
                 break;
             case PLAYING:
                 draw_game(&game, window, renderer);
@@ -316,9 +323,32 @@ void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
     }
 }
 
-void event_handler_scoring(SDL_Event * event)
+void event_handler_choose_player(SDL_Event * event, GAME_STATE* state)
 {
+    if (event->type == SDL_KEYDOWN) {
+        switch (event->key.keysym.sym) {
+            case SDLK_UP:
+            case SDLK_w:
+                player_selection = (player_selection - 1 + 2) % 2; // Wrap around
+                break;
+            case SDLK_DOWN:
+            case SDLK_s:
+                player_selection = (player_selection + 1) % 2; // Wrap around
+                break;
+            case SDLK_RETURN:
+            case SDLK_SPACE:
+            // choose player type
+                *state = PLAYING;
+                break;
+        }
+    }
+}
 
+void event_handler_scoring(SDL_Event * event, GAME_STATE* state)
+{
+    // Reset game state for new game
+    game.red.score = 0;
+    game.blue.score = 0;
 }
 
 void draw_menu(SDL_Window* window, SDL_Renderer* renderer)
@@ -446,6 +476,34 @@ void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer)
     draw_text_white("USE A/D OR LEFT/RIGHT TO NAVIGATE", SCREEN_WIDTH/2 - 210, 500, window, renderer, 0.3f);
     draw_text_white("PRESS ENTER OR SPACE TO SELECT", SCREEN_WIDTH/2 - 190, 530, window, renderer, 0.3f);
     draw_text_white("PRESS ESC TO GO BACK", SCREEN_WIDTH/2 - 130, 560, window, renderer, 0.3f);
+}
+
+void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
+{
+    // Set dark blue background
+    SDL_SetRenderDrawColor(renderer, 20, 20, 60, 255);
+    SDL_RenderClear(renderer);
+
+    // Draw title with white text
+    draw_text_white("CHOOSE PLAYER", SCREEN_WIDTH/2 - 150, 150, window, renderer, 0.6f);
+    const int left_margin = 80;
+    // Menu options: 0 = PvP, 1 = PvE, 2 = Exit
+    for (int i = 0; i < 3; ++i) {
+        std::string text;
+        if (i == 0) text = "STRIKER";
+        else if (i == 1) text = "DEFENDER";
+        else text = "BACK";
+        if (player_selection == i) text = "> " + text;
+        else text = "  " + text;
+        draw_text_white(text, left_margin, 300 + i * 50, window, renderer, 0.5f);
+    }
+
+    // Instructions at the bottom
+    const int bottom_margin = 70;
+    int instruction_y2 = SCREEN_HEIGHT - bottom_margin;
+    int instruction_y1 = instruction_y2 - 30; // 30px above
+    draw_text_white("USE W/S OR UP/DOWN TO NAVIGATE", left_margin, instruction_y1, window, renderer, 0.3f);
+    draw_text_white("PRESS ENTER OR SPACE TO SELECT", left_margin, instruction_y2, window, renderer, 0.3f);
 }
 
 void draw_pause(SDL_Window* window, SDL_Renderer* renderer, int selection)

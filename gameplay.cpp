@@ -312,7 +312,7 @@ void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
     }
     else // dribbing (move slowly with ball)
     {
-        ball->velocity *= (1 - player->ball_control);
+        ball->velocity *= (1 - player->ball_control); // problem
     }
 
     if (is_in_opponent_field(player))
@@ -405,6 +405,7 @@ void process_player_hit_border(Gameplay * game, Player * player)
         player->velocity.y = -player->velocity.y*(1-bounce);
     }
 }
+
 void process_ball_hit_border(Gameplay * game, Ball * ball)
 {
     Vec2 tangent(0,0);
@@ -505,4 +506,20 @@ Player * get_teammate(Player * player, Gameplay * game)
             if (game->blue.members[i]!=player) return game->blue.members[i];
         }
     }
+}
+
+
+void process_player_hit_goalposts(Gameplay * game, Player * player)
+{
+    int tile_size = 64;
+    int field_height = SCREEN_HEIGHT - TOP_PADDING;
+    int num_y = field_height / tile_size;
+    int goal_top_y = TOP_PADDING + (num_y/2 - 2) * tile_size + 40;
+    int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40;
+
+    SDL_Rect left_top_goal = {0, goal_top_y, tile_size, 1};
+    SDL_Rect left_bottom_goal = {0, goal_bottom_y + 1, tile_size, 1};
+    SDL_Rect right_top_goal = {SCREEN_WIDTH - tile_size, goal_top_y, tile_size, 1};
+    SDL_Rect right_bottom_goal = {SCREEN_WIDTH - tile_size, goal_bottom_y + 1, tile_size, 1};
+    // implement collision later
 }
