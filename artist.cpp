@@ -204,8 +204,9 @@ void draw_player(Player* player, SDL_Window* window, SDL_Renderer* renderer, boo
 
     if (is_active)
     {
+        std::string file = (player->is_stunned) ? "stunned.bmp" : "active.bmp";
         std::ostringstream ospath_0;
-            ospath_0 << IMAGE_PATH << "active.bmp";
+            ospath_0 << IMAGE_PATH << file;
         SDL_Texture * active_icon = getTexture(window, renderer, ospath_0.str());
         SDL_Rect active_rect = {player->rect.x + PLAYER_SPRITE_WIDTH/2 - 10, player->rect.y - 30, 20, 10};
 

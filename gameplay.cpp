@@ -49,6 +49,7 @@ void Gameplay::process(float delay) {
                 half_time_remaining = HALF_DURATION; // Reset for second half
                 half_time_break = true;
                 printf("Half Time! Press any key to continue to second half...\n");
+                
                 return; // Don't process game logic during break
             } else {
                 // End of second half - game over
@@ -58,6 +59,7 @@ void Gameplay::process(float delay) {
             }
         }
     }
+    else return;
 
     // AI moving
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
@@ -237,6 +239,19 @@ void process_player_collision(Gameplay * game, Player* player1, Player* player2)
         player2->velocity.y -= (impulse/p2_ratio) * direction.y;
     }
 
+    if (player1->team == player2->team) return;
+
+    if (!player1->is_stunned && player2->type=="tackle")
+        applyStunEffect(player1);
+    
+    if (!player2->is_stunned && player1->type=="tackle")
+        applyStunEffect(player2);
+    
+    if (player2->type=="shield")
+        applySlowEffect(player1);
+    
+    if (player1->type=="shield")
+        applySlowEffect(player2);
 }
 
 void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {

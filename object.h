@@ -67,8 +67,8 @@ public:
     Vec2 position;
     Vec2 velocity;
     Vec2 acceleration;
+    bool is_stunned;
 
-    bool is_active;
     SDL_Rect rect;
     TEAM_CODE team;
     double rotation_angle; // angle in degrees for sprite rotation
@@ -86,6 +86,7 @@ public:
 
     Player(int init_x, int init_y, TEAM_CODE init_team, std::string init_role, std::string init_type)
     {
+        is_stunned = false;
         position = Vec2(init_x, init_y);
         velocity = Vec2(0, 0);
         acceleration = Vec2(0, 0);
@@ -190,7 +191,7 @@ public:
         ball_control = 1.3; 
 
         power = 1;
-        toughness = 8;
+        toughness = 15;
     }  
 };
 
@@ -203,14 +204,13 @@ public:
         ball_control = 1.3; 
 
         power = 1;
-        toughness = 5;
+        toughness = 8;
     }  
 };
 
+using EffectFunc = std::function<void(void*)>;
 class EffectManager {
 public:
-    using EffectFunc = std::function<void(void*)>;
-
     static void ApplyEffect(Uint32 duration, EffectFunc applyFunc, EffectFunc expiredFunc, void* object);
 
 private:
@@ -221,3 +221,11 @@ private:
 
     static Uint32 TimerCallback(Uint32 interval, void* param);
 };
+
+void applyStunEffect(Player * player);
+void applyStun(void * obj);
+void expireStun(void * obj);
+
+void applySlowEffect(Player * player);
+void applySlow(void * obj);
+void expireSlow(void * obj);

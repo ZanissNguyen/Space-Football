@@ -196,6 +196,8 @@ void Player::change_position(int init_x, int init_y)
 
 void Striker::AI_Support(Gameplay * game)
 {
+    if (is_stunned) return;
+
     // state don't have ball 
     // chasing opponent player that have ball
     // if is the player closest ball, find spot into opponent goal
@@ -263,6 +265,8 @@ void Striker::AI_Support(Gameplay * game)
 // defense
 void Defender::AI_Support(Gameplay * game)
 {
+    if (is_stunned) return;
+
     // state don't have ball 
     //  chasing opponent player that have ball
     // if is the player closest ball, find spot into opponent goal
@@ -352,7 +356,6 @@ void Defender::AI_Support(Gameplay * game)
 }
 
 void EffectManager::ApplyEffect(Uint32 duration, EffectFunc applyFunc, EffectFunc expiredFunc, void* object) {
-    // Apply immediately
     applyFunc(object);
 
     // Prepare data for callback
@@ -372,4 +375,36 @@ Uint32 EffectManager::TimerCallback(Uint32 interval, void* param) {
     delete data;
 
     return 0; // do not repeat
+}
+
+void applyStunEffect(Player * player)
+{
+    EffectManager::ApplyEffect(STUN_DURATION, applyStun, expireStun, player);
+}
+
+void applyStun(void * obj)
+{
+    Player * p = static_cast<Player*>(obj);
+    p->is_stunned = true;
+}
+void expireStun(void * obj)
+{
+    Player * p = static_cast<Player*>(obj);
+    p->is_stunned = false;
+}
+
+void applySlowEffect(Player * player)
+{
+    EffectManager::ApplyEffect(SLOW_DURATION, applySlow, expireSlow, player);
+}
+
+void applySlow(void * obj)
+{
+    Player * p = static_cast<Player*>(obj);
+    p->movement_speed *= (1 - SLOW_EFFECT);
+}
+void expireSlow(void * obj)
+{
+    Player * p = static_cast<Player*>(obj);
+    p->movement_speed /= (1 - SLOW_EFFECT);
 }

@@ -103,24 +103,31 @@ int main(int argc, char* args[])
         {
             if (game.mode == PVP)
             {
-                if (key_state[SDL_SCANCODE_UP])
-                    game.blue.members[game.blue.active_player]->acceleration.y -= BASE_ACCELERATION;
-                if (key_state[SDL_SCANCODE_DOWN])
-                    game.blue.members[game.blue.active_player]->acceleration.y += BASE_ACCELERATION;
-                if (key_state[SDL_SCANCODE_LEFT])
-                    game.blue.members[game.blue.active_player]->acceleration.x -= BASE_ACCELERATION;
-                if (key_state[SDL_SCANCODE_RIGHT])
-                    game.blue.members[game.blue.active_player]->acceleration.x += BASE_ACCELERATION;
+                if (!game.blue.members[game.blue.active_player]->is_stunned)
+                {
+                    if (key_state[SDL_SCANCODE_UP])
+                        game.blue.members[game.blue.active_player]->acceleration.y -= BASE_ACCELERATION;
+                    if (key_state[SDL_SCANCODE_DOWN])
+                        game.blue.members[game.blue.active_player]->acceleration.y += BASE_ACCELERATION;
+                    if (key_state[SDL_SCANCODE_LEFT])
+                        game.blue.members[game.blue.active_player]->acceleration.x -= BASE_ACCELERATION;
+                    if (key_state[SDL_SCANCODE_RIGHT])
+                        game.blue.members[game.blue.active_player]->acceleration.x += BASE_ACCELERATION;
+            
+                }
             }
 
-            if (key_state[SDL_SCANCODE_W])
-                game.red.members[game.red.active_player]->acceleration.y -= BASE_ACCELERATION;
-            if (key_state[SDL_SCANCODE_S])
-                game.red.members[game.red.active_player]->acceleration.y += BASE_ACCELERATION;
-            if (key_state[SDL_SCANCODE_A])
-                game.red.members[game.red.active_player]->acceleration.x -= BASE_ACCELERATION;
-            if (key_state[SDL_SCANCODE_D])
-                game.red.members[game.red.active_player]->acceleration.x += BASE_ACCELERATION;
+            if (!game.red.members[game.red.active_player]->is_stunned)
+            {
+                if (key_state[SDL_SCANCODE_W])
+                    game.red.members[game.red.active_player]->acceleration.y -= BASE_ACCELERATION;
+                if (key_state[SDL_SCANCODE_S])
+                    game.red.members[game.red.active_player]->acceleration.y += BASE_ACCELERATION;
+                if (key_state[SDL_SCANCODE_A])
+                    game.red.members[game.red.active_player]->acceleration.x -= BASE_ACCELERATION;
+                if (key_state[SDL_SCANCODE_D])
+                    game.red.members[game.red.active_player]->acceleration.x += BASE_ACCELERATION;
+            }
         }
 
         // update game logic (always call to handle countdown)
