@@ -108,6 +108,11 @@ Each player type has unique characteristics:
 - **Ball Control**: Influences how easily the player controls the ball
 - **Power**: Determines shooting strength, especially near opponent goals
 
+There are some special effect:
+
+- **STUN**: Make player unable to move when hitted by a Tackle player
+- **SLOWNESS**: Make player not easy to move when hitted by a Shield player
+
 ### Environments
 
 - **Earth**: Standard friction and gravity
