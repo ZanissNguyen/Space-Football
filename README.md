@@ -74,6 +74,7 @@ g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp artist.c
 - **S**: Move down
 - **A**: Move left
 - **D**: Move right
+- **F**: Swith Player
 
 ### Player 2 (Blue Team) - PVP Mode Only
 
@@ -81,6 +82,7 @@ g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp artist.c
 - **↓**: Move down
 - **←**: Move left
 - **→**: Move right
+- **RCtrl**: Swith Player
 
 ## Gameplay
 
@@ -95,6 +97,11 @@ g++ -o main.exe main.cpp settings.cpp utils.cpp object.cpp gameplay.cpp artist.c
 
 ### Player Attributes
 
+Each player role has unique characteristics:
+
+- **Defender**: Gains speed when in its field, AI behavior trying to defend.
+- **Striker**: Gains speed when in opponent field, AI behavior trying to goal!
+
 Each player type has unique characteristics:
 
 - **Toughness**: Affects player vs player collisions
@@ -105,7 +112,7 @@ Each player type has unique characteristics:
 
 - **Earth**: Standard friction and gravity
 - **Moon**: Reduced friction, floatier movement
-- **Space/Mars**: Minimal friction, momentum-based gameplay
+- **Space/Mars**: Minimal friction, momentum-based gameplay (removed)
 
 ## Project Structure
 
