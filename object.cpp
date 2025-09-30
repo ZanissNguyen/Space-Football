@@ -120,6 +120,21 @@ void Player::move(Gameplay * game, float dt)
 {
     acceleration = acceleration.normalize() * BASE_ACCELERATION;
 
+    if (role == "striker")
+    {
+        if (is_in_opponent_field(this))
+        {
+            acceleration *= 1.2;
+        }
+    }
+    else // defender 
+    {
+        if (!is_in_opponent_field(this))
+        {
+            acceleration *= 1.2;
+        }
+    }
+
     float friction = FRICTION_EARTH;
     float accel_scale = 1.0f;
     if (game->map == MOON) {
