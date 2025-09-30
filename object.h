@@ -67,8 +67,8 @@ public:
     Vec2 position;
     Vec2 velocity;
     Vec2 acceleration;
+    bool is_stunned;
 
-    bool is_active;
     SDL_Rect rect;
     TEAM_CODE team;
     double rotation_angle; // angle in degrees for sprite rotation
@@ -81,15 +81,18 @@ public:
     float toughness; // process collision with player
     float ball_control; // how easy to control ball
     float power; // increase ball velocity when near the opponent goal
+    std::string role;
     std::string type;
 
-    Player(int init_x, int init_y, TEAM_CODE init_team, std::string init_type)
+    Player(int init_x, int init_y, TEAM_CODE init_team, std::string init_role, std::string init_type)
     {
+        is_stunned = false;
         position = Vec2(init_x, init_y);
         velocity = Vec2(0, 0);
         acceleration = Vec2(0, 0);
         rect = {init_x-PLAYER_SPRITE_WIDTH/2, init_y-PLAYER_SPRITE_HEIGHT/2, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT};
         team = init_team;
+        role = init_role;
         type = init_type;
 
         movement_speed = 1;
@@ -113,7 +116,7 @@ public:
 class Striker: public Player
 {
 public: 
-    Striker(int init_x, int init_y, TEAM_CODE team, std::string type) : Player(init_x, init_y, team, type)
+    Striker(int init_x, int init_y, TEAM_CODE team, std::string type) : Player(init_x, init_y, team, "striker", type)
     {
         movement_speed = 1;
         ball_control = 1; 
@@ -128,7 +131,7 @@ public:
 class Defender: public Player
 {
 public:
-    Defender(int init_x, int init_y, TEAM_CODE team, std::string type): Player(init_x, init_y, team, type)
+    Defender(int init_x, int init_y, TEAM_CODE team, std::string type): Player(init_x, init_y, team, "defender", type)
     {
         movement_speed = 1;
         ball_control = 1; 
@@ -143,7 +146,7 @@ public:
 class Power_Shooter: public Striker
 {
 public:
-    Power_Shooter(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "Power_Shooter")
+    Power_Shooter(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "power_shooter")
     {
         movement_speed = 1;
         ball_control = 1; 
@@ -156,9 +159,9 @@ public:
 class Speeder: public Striker
 {
 public:
-    Speeder(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "Speeder")
+    Speeder(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "speeder")
     {
-        movement_speed = 1.3;
+        movement_speed = 1.15;
         ball_control = 1; 
 
         power = 1.2;
@@ -169,7 +172,7 @@ public:
 class Controller: public Striker
 {
 public:
-    Controller(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "Controller")
+    Controller(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "controller")
     {
         movement_speed = 1;
         ball_control = 2; 
@@ -182,25 +185,47 @@ public:
 class Tackle: public Defender
 {
 public:
-    Tackle(int init_x, int init_y, TEAM_CODE team): Defender(init_x, init_y, team, "Tackle")
+    Tackle(int init_x, int init_y, TEAM_CODE team): Defender(init_x, init_y, team, "tackle")
     {
-        movement_speed = 0.9;
+        movement_speed = 0.995;
         ball_control = 1.3; 
 
         power = 1;
-        toughness = 5;
+        toughness = 15;
     }  
 };
 
 class Shield: public Defender
 {
 public:
-    Shield(int init_x, int init_y, TEAM_CODE team): Defender(init_x, init_y, team, "Shield")
+    Shield(int init_x, int init_y, TEAM_CODE team): Defender(init_x, init_y, team, "shield")
     {
-        movement_speed = 1.1;
+        movement_speed = 1.005;
         ball_control = 1.3; 
 
         power = 1;
-        toughness = 3;
+        toughness = 8;
     }  
 };
+
+using EffectFunc = std::function<void(void*)>;
+class EffectManager {
+public:
+    static void ApplyEffect(Uint32 duration, EffectFunc applyFunc, EffectFunc expiredFunc, void* object);
+
+private:
+    struct EffectData {
+        EffectFunc expired;
+        void* object;
+    };
+
+    static Uint32 TimerCallback(Uint32 interval, void* param);
+};
+
+void applyStunEffect(Player * player);
+void applyStun(void * obj);
+void expireStun(void * obj);
+
+void applySlowEffect(Player * player);
+void applySlow(void * obj);
+void expireSlow(void * obj);

@@ -35,4 +35,17 @@ T clamp(T value, T minVal, T maxVal) {
     return std::max(minVal, std::min(value, maxVal));
 }
 
+class RendererManager {
+public:
+    static void init(const char* title, int w, int h);
+    static void cleanup();
+
+    static SDL_Renderer* getRenderer() { return renderer; }
+    static SDL_Window* getWindow() { return window; }
+
+private:
+    static SDL_Window* window;
+    static SDL_Renderer* renderer;
+};
+
 SDL_Texture * getTexture(SDL_Window* window, SDL_Renderer* renderer, std::string path);

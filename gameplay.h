@@ -83,3 +83,4 @@ void process_player_hit_border(Gameplay* game, Player * player);
 void process_ball_hit_border(Gameplay * game, Ball * ball);
 Player * player_hold_ball(Gameplay * game);
 Player * get_teammate(Player * player, Gameplay * game);
+Player * get_closest_opponent(Player * player, Gameplay * game);

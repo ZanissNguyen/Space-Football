@@ -36,3 +36,21 @@ Vec2 rotate(const Vec2&v, float degrees)
         v.x * sinA + v.y * cosA
     );
 }
+
+SDL_Window* RendererManager::window = nullptr;
+SDL_Renderer* RendererManager::renderer = nullptr;
+
+void RendererManager::init(const char* title, int w, int h) {
+    window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, 0);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+}
+
+void RendererManager::cleanup() {
+    SDL_DestroyRenderer(renderer);
+    renderer = nullptr;
+
+    SDL_DestroyWindow(window);
+    window = nullptr;
+
+}
+

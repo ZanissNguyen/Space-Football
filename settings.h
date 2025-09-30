@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <functional>
 
 enum ERROR_CODE {
     IMAGE_NOT_FOUND = 0,
@@ -91,3 +92,6 @@ extern const float BOUNCE_FACTOR_EARTH;
 extern const float BOUNCE_FACTOR_MOON;
 
 extern const int SHOOT_THRESHOLD;
+extern const int STUN_DURATION;
+extern const int SLOW_DURATION;
+extern const float SLOW_EFFECT;

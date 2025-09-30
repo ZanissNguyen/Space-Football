@@ -54,3 +54,6 @@ const float BOUNCE_FACTOR_EARTH = 0.667f;
 const float BOUNCE_FACTOR_MOON = 0.333f;
 
 const int SHOOT_THRESHOLD = 300;
+const int STUN_DURATION = 300; // 0.3s
+extern const int SLOW_DURATION = 750; //0.75s
+extern const float SLOW_EFFECT = 0.2;

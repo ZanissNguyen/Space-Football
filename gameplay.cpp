@@ -49,6 +49,7 @@ void Gameplay::process(float delay) {
                 half_time_remaining = HALF_DURATION; // Reset for second half
                 half_time_break = true;
                 printf("Half Time! Press any key to continue to second half...\n");
+                
                 return; // Don't process game logic during break
             } else {
                 // End of second half - game over
@@ -58,12 +59,14 @@ void Gameplay::process(float delay) {
             }
         }
     }
+    else return;
 
     // AI moving
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
         // printf ("%d\n", red.active_player);
-        if (i!=red.active_player) red.members[i]->AI_Support(this);
+        if (i!=red.active_player)
+            red.members[i]->AI_Support(this);
         if (mode == PVP)
         {
             if (i!=blue.active_player)
@@ -236,6 +239,19 @@ void process_player_collision(Gameplay * game, Player* player1, Player* player2)
         player2->velocity.y -= (impulse/p2_ratio) * direction.y;
     }
 
+    if (player1->team == player2->team) return;
+
+    if (!player1->is_stunned && player2->type=="tackle")
+        applyStunEffect(player1);
+    
+    if (!player2->is_stunned && player1->type=="tackle")
+        applyStunEffect(player2);
+    
+    if (player2->type=="shield")
+        applySlowEffect(player1);
+    
+    if (player1->type=="shield")
+        applySlowEffect(player2);
 }
 
 void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
@@ -275,9 +291,9 @@ void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
 
     if (ballBlocked)
     {
-        ball->change_position(
-            player->position.x - normal.x * overlap * 2 * separation_factor,
-            player->position.y - normal.y * overlap * 2 * separation_factor
+        player->change_position(
+            player->position.x - normal.x * overlap * separation_factor,
+            player->position.y - normal.y * overlap * separation_factor
         );
     }
     else
@@ -312,19 +328,19 @@ void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
     }
     else // dribbing (move slowly with ball)
     {
-        ball->velocity *= (1 - player->ball_control);
+        ball->velocity *= 1/player->ball_control; 
     }
 
     if (is_in_opponent_field(player))
     {
         ball->velocity *= player->power;
     }
-    else
-    {
-        ball->velocity *= 1/player->ball_control;
-    }
+    // else
+    // {
+    //     // ball->velocity *= 1/player->ball_control;
+    // }
 
-    // if (ballBlocked) ball->velocity*=-3;
+    if (ballBlocked) ball->velocity*=-1.5;
 }
 
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
@@ -338,7 +354,7 @@ bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
     int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40; // +1 for inclusive range
 
     // Goal X range: within the goal post tiles
-    int goal_depth = tile_size / 2; // One tile deep
+    int goal_depth =  tile_size / 2; // One tile deep
 
     // Left goal (blue scores): x <= goal_depth, y in goal range
     if (ball->position.x <= goal_depth &&
@@ -405,6 +421,7 @@ void process_player_hit_border(Gameplay * game, Player * player)
         player->velocity.y = -player->velocity.y*(1-bounce);
     }
 }
+
 void process_ball_hit_border(Gameplay * game, Ball * ball)
 {
     Vec2 tangent(0,0);
@@ -507,6 +524,21 @@ Player * get_teammate(Player * player, Gameplay * game)
     }
 }
 
+Player * get_closest_opponent(Player * player, Gameplay * game)
+{
+    if (player->team == RED)
+    {
+        float player1_distance = Vec2(game->blue.members[0]->position - player->position).magnitude();
+        float player2_distance = Vec2(game->blue.members[1]->position - player->position).magnitude();
+        return (player1_distance < player2_distance) ? game->blue.members[0] : game->blue.members[1];
+    }
+    else
+    {
+        float player1_distance = Vec2(game->red.members[0]->position - player->position).magnitude();
+        float player2_distance = Vec2(game->red.members[1]->position - player->position).magnitude();
+        return (player1_distance < player2_distance) ? game->red.members[0] : game->red.members[1];
+    }
+}
 
 void process_player_hit_goalposts(Gameplay * game, Player * player)
 {
@@ -520,5 +552,6 @@ void process_player_hit_goalposts(Gameplay * game, Player * player)
     SDL_Rect left_bottom_goal = {0, goal_bottom_y + 1, tile_size, 1};
     SDL_Rect right_top_goal = {SCREEN_WIDTH - tile_size, goal_top_y, tile_size, 1};
     SDL_Rect right_bottom_goal = {SCREEN_WIDTH - tile_size, goal_bottom_y + 1, tile_size, 1};
+    
     // implement collision later
 }

@@ -7,8 +7,11 @@ void draw_game(Gameplay * game, SDL_Window * window, SDL_Renderer * renderer)
 
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
-        draw_player(game->red.members[i], window, renderer);
-        draw_player(game->blue.members[i], window, renderer);
+        bool red_active = (i == game->red.active_player);
+        bool blue_active = (game->mode == PVP) ? (i == game->blue.active_player) : false;
+
+        draw_player(game->red.members[i], window, renderer, red_active);
+        draw_player(game->blue.members[i], window, renderer, blue_active);
     }
 
     draw_ball(&(game->ball), window, renderer);
@@ -25,8 +28,8 @@ SDL_Texture * getTexture(SDL_Window* window, SDL_Renderer* renderer, std::string
      // Load BMP into surface
     SDL_Surface* surface = SDL_LoadBMP(path.c_str());
     if (!surface) {
-        printf("ERROR CODE = %s\n", ERROR_CODE::IMAGE_NOT_FOUND);
-        printf("Path = %s\n", path);
+        printf("ERROR CODE = %d\n", ERROR_CODE::IMAGE_NOT_FOUND);
+        printf("Path = %s\n", path.c_str());
         printf("SDL ERROR CODE = %s\n", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -57,7 +60,7 @@ void draw_limb(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture,
     SDL_RenderCopyEx(renderer, texture, &src_rect, &dst_rect, angle, &center, flip);
 }
 
-void draw_player(Player* player, SDL_Window* window, SDL_Renderer* renderer)
+void draw_player(Player* player, SDL_Window* window, SDL_Renderer* renderer, bool is_active)
 {
     // Static texture to avoid loading every frame (this function is called 4 times per frame!)
     static SDL_Texture* characters_texture = nullptr;
@@ -185,7 +188,33 @@ void draw_player(Player* player, SDL_Window* window, SDL_Renderer* renderer)
     // Draw main body AFTER legs (so body appears on top)
     SDL_RenderCopyEx(renderer, characters_texture, &src_rect, dst_rect, player->rotation_angle, &center, flip);
 
+    std::string team = (player->team == RED) ? "_red.bmp" : "_blue.bmp";
+    std::ostringstream ospath;
+        ospath << IMAGE_PATH << player->type << team;
+
+    SDL_Texture * type_icon = getTexture(window, renderer, ospath.str());
+    SDL_Rect type_rect = {player->rect.x + PLAYER_SPRITE_WIDTH/2 - 10, player->rect.y - 20, 20, 20};
+
+    // draw icon role
+    SDL_RenderCopy(renderer, type_icon, NULL, &type_rect);
+
     // Don't destroy static texture - it's reused
+    SDL_DestroyTexture(type_icon);
+    type_icon = nullptr;
+
+    if (is_active)
+    {
+        std::string file = (player->is_stunned) ? "stunned.bmp" : "active.bmp";
+        std::ostringstream ospath_0;
+            ospath_0 << IMAGE_PATH << file;
+        SDL_Texture * active_icon = getTexture(window, renderer, ospath_0.str());
+        SDL_Rect active_rect = {player->rect.x + PLAYER_SPRITE_WIDTH/2 - 10, player->rect.y - 30, 20, 10};
+
+        SDL_RenderCopy(renderer, active_icon, NULL, &active_rect);
+
+        SDL_DestroyTexture(active_icon);
+        active_icon = nullptr;
+    }
 }
 
 void draw_field(SDL_Window * window, SDL_Renderer * renderer)
