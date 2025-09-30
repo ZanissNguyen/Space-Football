@@ -276,9 +276,9 @@ void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
 
     if (ballBlocked)
     {
-        ball->change_position(
-            player->position.x - normal.x * overlap * 2 * separation_factor,
-            player->position.y - normal.y * overlap * 2 * separation_factor
+        player->change_position(
+            player->position.x - normal.x * overlap * separation_factor,
+            player->position.y - normal.y * overlap * separation_factor
         );
     }
     else
@@ -313,19 +313,19 @@ void process_shoot_collision(Gameplay * game, Player* player, Ball* ball) {
     }
     else // dribbing (move slowly with ball)
     {
-        ball->velocity *= (1 - player->ball_control); // problem
+        ball->velocity *= 1/player->ball_control; 
     }
 
     if (is_in_opponent_field(player))
     {
         ball->velocity *= player->power;
     }
-    else
-    {
-        ball->velocity *= 1/player->ball_control;
-    }
+    // else
+    // {
+    //     // ball->velocity *= 1/player->ball_control;
+    // }
 
-    // if (ballBlocked) ball->velocity*=-3;
+    if (ballBlocked) ball->velocity*=-1.5;
 }
 
 bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
@@ -339,7 +339,7 @@ bool is_ball_in_goal(Ball* ball, int * red_score, int * blue_score) {
     int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40; // +1 for inclusive range
 
     // Goal X range: within the goal post tiles
-    int goal_depth = tile_size / 2; // One tile deep
+    int goal_depth =  tile_size / 2; // One tile deep
 
     // Left goal (blue scores): x <= goal_depth, y in goal range
     if (ball->position.x <= goal_depth &&
@@ -537,5 +537,6 @@ void process_player_hit_goalposts(Gameplay * game, Player * player)
     SDL_Rect left_bottom_goal = {0, goal_bottom_y + 1, tile_size, 1};
     SDL_Rect right_top_goal = {SCREEN_WIDTH - tile_size, goal_top_y, tile_size, 1};
     SDL_Rect right_bottom_goal = {SCREEN_WIDTH - tile_size, goal_bottom_y + 1, tile_size, 1};
+    
     // implement collision later
 }

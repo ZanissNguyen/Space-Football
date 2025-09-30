@@ -10,6 +10,9 @@ void Ball::move(Gameplay * game, float dt)
     }
     velocity *= (1.0f - friction * dt);
 
+    if (abs(velocity.x) < 0.005) {velocity.x = 0;}
+    if (abs(velocity.y) < 0.005) {velocity.y = 0;}
+
     // dx = x + dv
     Vec2 new_position = position + velocity * dt;
     change_position(new_position.x, new_position.y);
@@ -145,6 +148,9 @@ void Player::move(Gameplay * game, float dt)
     velocity += acceleration * dt * accel_scale * movement_speed;
     velocity *= (1.0f - friction * dt);
 
+    if (abs(velocity.x) < 0.005) {velocity.x = 0;}
+    if (abs(velocity.y) < 0.005) {velocity.y = 0;}
+
     // Apply max speed limit
     float speed = velocity.magnitude();
     if (speed > MAX_PLAYER_SPEED*movement_speed) {
@@ -196,6 +202,11 @@ void Striker::AI_Support(Gameplay * game)
     // if close enough chasing the ball
     Ball * ball = &game->ball;
     Player * closest_ball = player_hold_ball(game);
+
+    float velocityMag = velocity.magnitude();
+    float agility = 1.0f - (velocityMag / MAX_PLAYER_SPEED * movement_speed);
+    agility = clamp(agility, 0.0f, 1.0f);
+
     if (closest_ball == this) // already closest to the ball, find a spot to control/shoot
     {
         Vec2 opponent_goal = Vec2((team == RED) ? SCREEN_WIDTH : 0,
@@ -207,18 +218,22 @@ void Striker::AI_Support(Gameplay * game)
         Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
         float alignment = dot(ball_to_goal.normalize(), (ball->position - position).normalize());
-        if (alignment > 0.18f) {
+        if (alignment > 0.259f) {
             // Already on good side -> prepare to shoot
             Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
             Vec2 direction = (spot_to_shoot - position).normalize();
             acceleration = direction * BASE_ACCELERATION;
         } 
         else {
+            float minAngle = 35.0f; // sharp turns if agile
+            float maxAngle = 60.0f; // wide arc if clumsy
+            float rotationAngle = maxAngle - agility * (maxAngle - minAngle);
+
             // Reposition around ball (support spot behind it)
             Vec2 support_spot = ball->position - ball_to_goal.normalize() * 2.0f * BALL_SIZE;
             Vec2 direction = (support_spot - position).normalize();
             float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
-            Vec2 direction2 = rotate(direction, 40.0f * opr);
+            Vec2 direction2 = rotate(direction, rotationAngle);
             acceleration = direction2 * BASE_ACCELERATION;
         }
     
@@ -254,6 +269,11 @@ void Defender::AI_Support(Gameplay * game)
     // if close enough chasing the ball
     Ball * ball = &game->ball;
     Player * closest_ball = player_hold_ball(game);
+
+    float velocityMag = velocity.magnitude();
+    float agility = 1.0f - (velocityMag / MAX_PLAYER_SPEED * movement_speed);
+    agility = clamp(agility, 0.0f, 1.0f);
+
     if (closest_ball == this) // already closest to the ball, find a spot to control/shoot
     {
         // like striker logic
@@ -266,18 +286,22 @@ void Defender::AI_Support(Gameplay * game)
         Vec2 direction = Vec2(spot_to_shoot.x - position.x, spot_to_shoot.y - position.y).normalize();
         
         float alignment = dot(ball_to_goal.normalize(), (ball->position - position).normalize());
-        if (alignment > 0.18f) {
+        if (alignment > 0.259f) {
             // Already on good side -> prepare to shoot
             Vec2 spot_to_shoot = ball->position - ball_to_goal.normalize() * BALL_SIZE;
             Vec2 direction = (spot_to_shoot - position).normalize();
             acceleration = direction * BASE_ACCELERATION;
         } 
         else {
+            float minAngle = 35.0f; // sharp turns if agile
+            float maxAngle = 60.0f; // wide arc if clumsy
+            float rotationAngle = maxAngle - agility * (maxAngle - minAngle);
+
             // Reposition around ball (support spot behind it)
             Vec2 support_spot = ball->position - ball_to_goal.normalize() * 2.0f * BALL_SIZE;
             Vec2 direction = (support_spot - position).normalize();
             float opr = (position.y - support_spot.y < 0) ? -1.0f : 1.0f;
-            Vec2 direction2 = rotate(direction, 40.0f * opr);
+            Vec2 direction2 = rotate(direction, rotation_angle * opr);
             acceleration = direction2 * BASE_ACCELERATION;
         }
     
@@ -290,11 +314,21 @@ void Defender::AI_Support(Gameplay * game)
                 (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING);
             Vec2 opponent_position = closest_ball->position;
             Vec2 opponent_to_goal = our_goal - opponent_position;
+            
+            if (opponent_to_goal.magnitude() > 300.0f)
+            {
+                Vec2 defend_position = opponent_position + opponent_to_goal * 0.5f;
+                Vec2 direction = (defend_position - position).normalize();
 
-            Vec2 defend_position = opponent_position + opponent_to_goal * 0.5f;
-            Vec2 direction = (defend_position - position).normalize();
+                acceleration = direction * BASE_ACCELERATION;
+            }
+            else
+            {
+                Vec2 direction = (ball->position - position).normalize();
 
-            acceleration = direction * BASE_ACCELERATION;
+                acceleration = direction * BASE_ACCELERATION;
+            }
+
             return;
         }
         else // your teammate hold the ball
