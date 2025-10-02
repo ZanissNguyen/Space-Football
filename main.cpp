@@ -1,6 +1,9 @@
 #include "main.h"
 #include <iomanip>
 
+// Forward declarations
+void cleanup_global_players();
+
 Gameplay game; // Make game global for event handlers
 SDL_Window * window = NULL;
 SDL_Renderer * renderer = NULL;
@@ -80,11 +83,9 @@ int main(int argc, char* args[])
                             if (pause_selection == 0) {
                                 state = PLAYING;
                             } else {
+                                // Cleanup before going to menu
                                 game.cleanup();
-                                red_slots[0] = 5; red_slots[1] = 5;
-                                blue_slots[0] = 5; blue_slots[1] = 5;
-                                players_red.clear();
-                                players_blue.clear();
+                                cleanup_global_players();
                                 state = MENU;
                             }
                         }
@@ -100,6 +101,9 @@ int main(int argc, char* args[])
                                 state = CHOOSE_MAP;
                             } else {
                                 event_handler_scoring(&event, &state);
+                                // Cleanup before going to menu
+                                game.cleanup();
+                                cleanup_global_players();
                                 state = MENU;
                             }
                         }
@@ -236,6 +240,33 @@ void close()
     SDL_Quit();
 }
 
+// Function to cleanup global player vectors
+void cleanup_global_players() {
+    // Clean up red team players
+    for (int i = 0; i < players_red.size(); i++) {
+        if (players_red[i] != nullptr) {
+            delete players_red[i];
+        }
+    }
+    players_red.clear();
+    
+    // Clean up blue team players
+    for (int i = 0; i < players_blue.size(); i++) {
+        if (players_blue[i] != nullptr) {
+            delete players_blue[i];
+        }
+    }
+    players_blue.clear();
+    
+    // Reset selection arrays
+    red_slots[0] = red_slots[1] = 5;
+    blue_slots[0] = blue_slots[1] = 5;
+    
+    // Reset selections
+    red_selection = 0;
+    blue_selection = 0;
+}
+
 void event_handler_menu(SDL_Event * event, GAME_STATE* state)
 {
     if (event->type == SDL_KEYDOWN) {
@@ -251,6 +282,8 @@ void event_handler_menu(SDL_Event * event, GAME_STATE* state)
             case SDLK_RETURN:
             case SDLK_SPACE:
                 selected_mode = (menu_selection == 0) ? PVP : PVE;
+                // Cleanup before starting new game
+                cleanup_global_players();
                 *state = CHOOSE_MAP;
                 break;
         }
@@ -316,6 +349,8 @@ void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
                     break;
                 }
             case SDLK_ESCAPE:
+                // Cleanup before going to menu
+                cleanup_global_players();
                 *state = MENU;
                 break;
         }

@@ -1,11 +1,10 @@
 #include "artist.h"
+#include <cmath>
 
 // this file draw things
 void draw_game(Gameplay * game, SDL_Window * window, SDL_Renderer * renderer)
 {
     draw_field(window, renderer);
-
-    draw_effect(game, window, renderer);
 
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
@@ -17,6 +16,9 @@ void draw_game(Gameplay * game, SDL_Window * window, SDL_Renderer * renderer)
     }
 
     draw_ball(&(game->ball), window, renderer);
+
+    // Draw events behind goals but above players/ball
+    draw_events(game, window, renderer);
 
     // Draw goals on top of everything (highest z-index)
     draw_goals(window, renderer);
@@ -727,40 +729,123 @@ void draw_text_white(const std::string& text, int x, int y, SDL_Window* window, 
     // Don't destroy static texture - it's reused
 }
 
-void draw_effect(Gameplay * game, SDL_Window* window, SDL_Renderer * renderer)
+void draw_events(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer)
 {
-    static SDL_Texture * wind_icon = nullptr;
-    static SDL_Texture * blackhole_icon = nullptr;
-
-    if (!wind_icon)
-    {
-        std::ostringstream ospath;
-        ospath << IMAGE_PATH << "wind.bmp";
-        wind_icon = getTexture(window, renderer, ospath.str());
+    static SDL_Texture* wind_texture = nullptr;
+    static SDL_Texture* blackhole_texture = nullptr;
+    
+    // Load textures on first call
+    if (!wind_texture) {
+        std::ostringstream wind_path;
+        wind_path << IMAGE_PATH << "wind.bmp";
+        wind_texture = getTexture(window, renderer, wind_path.str());
     }
-
-    if (!blackhole_icon)
-    {
-        std::ostringstream ospath;
-        ospath << IMAGE_PATH << "blackhole.bmp";
-        blackhole_icon = getTexture(window, renderer, ospath.str());
+    
+    if (!blackhole_texture) {
+        std::ostringstream blackhole_path;
+        blackhole_path << IMAGE_PATH << "blackhole.bmp";
+        blackhole_texture = getTexture(window, renderer, blackhole_path.str());
     }
-
-    for (int i = 0; i<game->events.size(); i++)
+    
+    Uint64 current_time = SDL_GetTicks64();
+    Uint64 elapsed = current_time - game->start_time;
+    
+    for (int i = 0; i < game->events.size(); i++)
     {
-        Event e = game->events[i];
-        if (e.active)
+        Event& event = game->events[i];
+        
+        // Check if event is currently active
+        if (elapsed >= event.start_time && elapsed < event.start_time + event.duration)
         {
-            if (e.type == Event::EVENT_TYPE::WIND)
+            if (event.type == Event::WIND)
             {
-                SDL_Rect wind_icon_rect = {0, 0, 100, 100};
-                SDL_RenderCopy(renderer, wind_icon, NULL, &wind_icon_rect);
+                // Draw wind effect across the screen
+                // Multiple wind sprites for full coverage
+                const int wind_size = 80;
+                const int grid_spacing = 120;
+                
+                for (int x = -40; x < SCREEN_WIDTH + 40; x += grid_spacing)
+                {
+                    for (int y = TOP_PADDING; y < SCREEN_HEIGHT - 40; y += grid_spacing)
+                    {
+                        SDL_Rect wind_rect = {x, y, wind_size, wind_size};
+                        
+                        // Add some animation by slightly offsetting based on time
+                        float time_factor = (elapsed - event.start_time) * 0.002f;
+                        wind_rect.x += (int)(sin(time_factor + x * 0.01f) * 10);
+                        wind_rect.y += (int)(cos(time_factor + y * 0.01f) * 5);
+                        
+                        // Fade in/out effect
+                        float alpha_factor = 1.0f;
+                        Uint64 event_progress = elapsed - event.start_time;
+                        if (event_progress < 500) {
+                            alpha_factor = event_progress / 500.0f; // Fade in
+                        } else if (event_progress > event.duration - 500) {
+                            alpha_factor = (event.duration - event_progress) / 500.0f; // Fade out
+                        }
+                        
+                        SDL_SetTextureAlphaMod(wind_texture, (Uint8)(255 * alpha_factor * 0.7f));
+                        SDL_RenderCopy(renderer, wind_texture, NULL, &wind_rect);
+                    }
+                }
             }
-            else
+            else if (event.type == Event::BLACK_HOLE)
             {
-                SDL_Rect blackhole_rect = {(int) e.position.x-e.radius, (int) e.position.y-e.radius, 2*e.radius, 2*e.radius};
-                SDL_RenderCopy(renderer, blackhole_icon, NULL, &blackhole_rect);
+                // Draw black hole at center
+                const int blackhole_size = 120;
+                SDL_Rect blackhole_rect = {
+                    (int)(event.position.x - blackhole_size/2),
+                    (int)(event.position.y - blackhole_size/2),
+                    blackhole_size,
+                    blackhole_size
+                };
+                
+                // Pulsing animation
+                float time_factor = (elapsed - event.start_time) * 0.005f;
+                float pulse = 1.0f + sin(time_factor) * 0.2f;
+                blackhole_rect.w = (int)(blackhole_size * pulse);
+                blackhole_rect.h = (int)(blackhole_size * pulse);
+                blackhole_rect.x = (int)(event.position.x - blackhole_rect.w/2);
+                blackhole_rect.y = (int)(event.position.y - blackhole_rect.h/2);
+                
+                // Fade in/out effect
+                float alpha_factor = 1.0f;
+                Uint64 event_progress = elapsed - event.start_time;
+                if (event_progress < 500) {
+                    alpha_factor = event_progress / 500.0f; // Fade in
+                } else if (event_progress > event.duration - 500) {
+                    alpha_factor = (event.duration - event_progress) / 500.0f; // Fade out
+                }
+                
+                SDL_SetTextureAlphaMod(blackhole_texture, (Uint8)(255 * alpha_factor));
+                SDL_RenderCopy(renderer, blackhole_texture, NULL, &blackhole_rect);
+                
+                // Draw warning circles around black hole
+                SDL_SetRenderDrawColor(renderer, 255, 100, 100, (Uint8)(100 * alpha_factor));
+                
+                // Draw multiple warning circles
+                for (int radius = 50; radius <= 150; radius += 50)
+                {
+                    // Simple circle approximation using lines
+                    const int segments = 32;
+                    for (int j = 0; j < segments; j++)
+                    {
+                        float angle1 = (j * 2 * M_PI) / segments;
+                        float angle2 = ((j + 1) * 2 * M_PI) / segments;
+                        
+                        int x1 = (int)(event.position.x + cos(angle1) * radius);
+                        int y1 = (int)(event.position.y + sin(angle1) * radius);
+                        int x2 = (int)(event.position.x + cos(angle2) * radius);
+                        int y2 = (int)(event.position.y + sin(angle2) * radius);
+                        
+                        SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+                    }
+                }
             }
         }
     }
+    
+    // Reset alpha mod
+    if (wind_texture) SDL_SetTextureAlphaMod(wind_texture, 255);
+    if (blackhole_texture) SDL_SetTextureAlphaMod(blackhole_texture, 255);
 }
