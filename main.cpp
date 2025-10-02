@@ -571,6 +571,16 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
     static SDL_Texture* controller_blue_texture = nullptr;
     static SDL_Texture* tackle_blue_texture = nullptr;
     static SDL_Texture* shield_blue_texture = nullptr;
+
+    static SDL_Texture* power_shooter_icon = nullptr;
+    static SDL_Texture* speeder_icon = nullptr;
+    static SDL_Texture* controller_icon = nullptr;
+    static SDL_Texture* tackle_icon = nullptr;
+    static SDL_Texture* shield_icon = nullptr;
+
+    static SDL_Texture * red_border = nullptr;
+    static SDL_Texture * blue_border = nullptr;
+
     if (!power_shooter_red_texture) {
         std::ostringstream ospath;
         ospath << IMAGE_PATH << "power_shooter_red.bmp";
