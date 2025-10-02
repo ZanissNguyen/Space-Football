@@ -174,7 +174,7 @@ class Controller: public Striker
 public:
     Controller(int init_x, int init_y, TEAM_CODE team): Striker(init_x, init_y, team, "controller")
     {
-        movement_speed = 1;
+        movement_speed = 1.05;
         ball_control = 2; 
 
         power = 1.2;
@@ -187,7 +187,7 @@ class Tackle: public Defender
 public:
     Tackle(int init_x, int init_y, TEAM_CODE team): Defender(init_x, init_y, team, "tackle")
     {
-        movement_speed = 0.995;
+        movement_speed =1;
         ball_control = 1.3; 
 
         power = 1;
@@ -200,7 +200,7 @@ class Shield: public Defender
 public:
     Shield(int init_x, int init_y, TEAM_CODE team): Defender(init_x, init_y, team, "shield")
     {
-        movement_speed = 1.005;
+        movement_speed = 1.05;
         ball_control = 1.3; 
 
         power = 1;

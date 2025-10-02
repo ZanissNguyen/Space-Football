@@ -3,8 +3,8 @@
 const std::string IMAGE_PATH = R"(assets\image\)";
 const std::string AUDIO_PATH = R"(assets\audio\)";
 
-const int SCREEN_WIDTH = 1472; // 64 * 23
-const int SCREEN_HEIGHT = 832; // 64 * 11 + 64 * 2
+const int SCREEN_WIDTH = 1216; // 64 * 19
+const int SCREEN_HEIGHT = 704; // 64 * 9 + 64 * 2
 const int TOP_PADDING = 128;   // 64 * 2
 const int FPS = 60;
 const Uint64 GAME_TIME = 180000;
