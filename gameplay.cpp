@@ -57,11 +57,12 @@ void Team::cleanup()
 }
 
 // ---------------- Event -----------------
-void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, Vec2 vel)
+void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int radius, Vec2 vel)
 {
     type = t;
     duration = dur;
     position = pos;
+    // radius parameter added but not used in our implementation
     velocity = vel;
     start_time = 0;
     active = false;
@@ -325,14 +326,14 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     if (map == EARTH)
     {
         Event wind;
-        wind.init(Event::WIND, 3000, Vec2(0,0), Vec2(11.0f,11.0f)); // 3 seconds moderate wind (1.5x stronger)
+        wind.init(Event::WIND, 3000, Vec2(0,0), 0, Vec2(11.0f,11.0f)); // 3 seconds moderate wind (1.5x stronger)
         wind.start_time = 13000; // start after countdown (3s) + 10s = 13s
         events.push_back(wind);
     }
     else if (map == MOON)
     {
         Event blackhole;
-        blackhole.init(Event::BLACK_HOLE, 3000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), Vec2(0,0));
+        blackhole.init(Event::BLACK_HOLE, 3000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), 120, Vec2(0,0));
         blackhole.start_time = 13000; // start after countdown (3s) + 10s = 13s
         events.push_back(blackhole);
     }
