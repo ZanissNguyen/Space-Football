@@ -48,4 +48,5 @@ private:
     static SDL_Renderer* renderer;
 };
 
+void init_random();
 int random_int(int start, int end);

@@ -51,12 +51,13 @@ public:
     Vec2 position; // for black hole
     int radius; // for black hole
     Vec2 velocity; // for wind
+    float strength; // for wind
     bool active;
 
     Event()
         : type(NONE), duration(0), start_time(0), position(Vec2(0,0)), velocity(Vec2(0,0)), active(false) {}
     
-    void init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int radius, Vec2 vel);
+    void init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int radius, Vec2 vel, float strength);
     void process(Gameplay * game);
 };
 

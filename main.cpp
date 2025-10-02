@@ -23,6 +23,8 @@ int blue_slots[2] = {5, 5}; // 5 = not chosen, 0 - 4 = chosen
 
 int main(int argc, char* args[])
 {
+    init_random();
+
     int delay = (int)1000/FPS;
     game_initialize();
 

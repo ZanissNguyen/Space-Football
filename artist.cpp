@@ -752,7 +752,7 @@ void draw_events(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer)
     
     for (int i = 0; i < game->events.size(); i++)
     {
-        Event& event = game->events[i];
+        Event event = game->events[i];
         
         // Check if event is currently active
         if (elapsed >= event.start_time && elapsed < event.start_time + event.duration)
@@ -792,7 +792,8 @@ void draw_events(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer)
             else if (event.type == Event::BLACK_HOLE)
             {
                 // Draw black hole at center
-                const int blackhole_size = 120;
+                const int blackhole_size = event.radius;
+                // printf("%d\n", event.radius);
                 SDL_Rect blackhole_rect = {
                     (int)(event.position.x - blackhole_size/2),
                     (int)(event.position.y - blackhole_size/2),
@@ -824,7 +825,7 @@ void draw_events(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer)
                 SDL_SetRenderDrawColor(renderer, 255, 100, 100, (Uint8)(100 * alpha_factor));
                 
                 // Draw multiple warning circles
-                for (int radius = 50; radius <= 150; radius += 50)
+                for (int radius = 50; radius <= blackhole_size; radius += 50)
                 {
                     // Simple circle approximation using lines
                     const int segments = 32;

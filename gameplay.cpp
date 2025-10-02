@@ -57,13 +57,15 @@ void Team::cleanup()
 }
 
 // ---------------- Event -----------------
-void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int radius, Vec2 vel)
+void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int rad, Vec2 vel, float stre)
 {
     type = t;
     duration = dur;
     position = pos;
     // radius parameter added but not used in our implementation
+    radius = rad;
     velocity = vel;
+    strength = stre;
     start_time = 0;
     active = false;
 }
@@ -78,7 +80,8 @@ void Event::process(Gameplay * game)
         // Enhanced Wind Effect with visual representation
         // Wind strength varies with time for more dynamic effect
         float wind_intensity = 1.0f + 0.3f * sin(SDL_GetTicks() * 0.003f); // Oscillating intensity
-        Vec2 wind_force = velocity * wind_intensity;
+        // printf("Wwind Strength %f\n", strength);
+        Vec2 wind_force = velocity.normalize() * wind_intensity * strength; // Adjusted force multiplier
         
         // Apply wind to all players with slight variation based on mass/type
         for (int i = 0; i < NUMBER_OF_PLAYER; i++)
@@ -102,9 +105,9 @@ void Event::process(Gameplay * game)
     else if (type == BLACK_HOLE)
     {
         // Enhanced Black Hole with moderate physics for 3s event
-        const float MAX_PULL_DISTANCE = 350.0f;  // Moderate range
-        const float MIN_SAFE_DISTANCE = 8.0f;
-        const float CRITICAL_DISTANCE = 65.0f;   // Moderate critical zone
+        const float MAX_PULL_DISTANCE = 1.0f * radius;  // Moderate range
+        const float MIN_SAFE_DISTANCE = 0.1f * radius;  // singularity
+        const float CRITICAL_DISTANCE = 0.4f * radius;   // Moderate critical zone
         
         // Black hole effect on ball
         Vec2 to_blackhole = position - game->ball.position;
@@ -325,17 +328,37 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     // if map earth, always wind, moon always blackhole
     if (map == EARTH)
     {
-        Event wind;
-        wind.init(Event::WIND, 3000, Vec2(0,0), 0, Vec2(11.0f,11.0f)); // 3 seconds moderate wind (1.5x stronger)
-        wind.start_time = 13000; // start after countdown (3s) + 10s = 13s
-        events.push_back(wind);
+        int num_winds = random_int(1, 3);
+        int duration = 3000; // each wind lasts for 3 seconds
+        for (int i = 0; i<num_winds; i++)
+        {
+            Event wind;
+            int x = random_int(-100, 100);
+            int y = random_int(-100, 100);
+            int strength = random_int(11, 30);
+            wind.init(Event::WIND, duration, Vec2(0,0), 0, Vec2(x,y), strength);
+            wind.start_time = 13000 + i*10000; // start after countdown (3s) + 10s + i*7s
+            events.push_back(wind);
+        }
     }
     else if (map == MOON)
     {
-        Event blackhole;
-        blackhole.init(Event::BLACK_HOLE, 3000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), 120, Vec2(0,0));
-        blackhole.start_time = 13000; // start after countdown (3s) + 10s = 13s
-        events.push_back(blackhole);
+        // std::vector<Event> blackholes;
+        // random number of blackhole between 1 to 3
+        int num_blackholes = random_int(1, 3);
+        // printf("%d\n", num_blackholes);
+        int duration = 3000; // each blackhole lasts for 3 seconds
+        for (int i = 0; i<num_blackholes; i++)
+        {
+            int radius = random_int(200, 288); // random radius between 200 to 700
+            printf("%d - %d\n", i, radius);
+            Event blackhole;
+            int x = SCREEN_WIDTH/2;
+            int y = random_int(radius, SCREEN_HEIGHT-radius) + TOP_PADDING;
+            blackhole.init(Event::BLACK_HOLE, duration, Vec2(x,y), radius, Vec2(0,0), 0);
+            blackhole.start_time = 13000 + i*10000; // start after countdown (3s) + 10s + i*7s
+            events.push_back(blackhole);
+        }
     }
 
     // printf("assign complete!");
