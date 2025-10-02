@@ -8,6 +8,8 @@
 #include <sstream>
 #include <vector>
 #include <functional>
+#include <cstdlib>
+#include <ctime>   
 
 enum ERROR_CODE {
     IMAGE_NOT_FOUND = 0,

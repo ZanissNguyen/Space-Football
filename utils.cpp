@@ -54,3 +54,11 @@ void RendererManager::cleanup() {
 
 }
 
+int random_int(int start, int end)
+{
+    srand(static_cast<unsigned>(time(0)));
+    
+    int result = start + rand() % (end - start + 1);;
+    return result;
+}
+

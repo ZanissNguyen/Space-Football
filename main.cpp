@@ -15,7 +15,7 @@ bool is_player_red_choosing = true;
 std::vector<Player*> players_red;
 std::vector<Player*> players_blue;
 int red_slots[2] = {5, 5};
-int blue_slots[2] = {5, 5}; // 5 = not chosen, 0 - 4 = chosen
+int blue_slots[2] = {5, 5};// 5 = not chosen, 0 - 4 = chosen
 
 
 int main(int argc, char* args[])
@@ -79,6 +79,12 @@ int main(int argc, char* args[])
                             if (pause_selection == 0) {
                                 state = PLAYING;
                             } else {
+                                // reset team
+                                game.cleanup();
+                                red_slots[0] = 5; red_slots[1] = 5;
+                                blue_slots[0] = 5; blue_slots[1] = 5;
+                                players_red.clear();
+                                players_blue.clear();
                                 state = MENU;
                             }
                         }
@@ -161,7 +167,7 @@ int main(int argc, char* args[])
                 draw_choose_map(window, renderer);
                 break;
             case CHOOSE_PLAYER:
-                draw_choose_player(window, renderer);
+                draw_choose_player(&game, window, renderer);
                 break;
             case PLAYING:
                 draw_game(&game, window, renderer);
@@ -297,14 +303,7 @@ void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
             case SDLK_SPACE:
                 {
                     selected_map = (map_selection == 0) ? EARTH : MOON;
-//                    std::vector<Player*> players_red;
-//                    players_red.push_back(new Speeder(0,0,RED));
-//                    players_red.push_back(new Tackle(0,0,RED));
-//                    std::vector<Player*> players_blue;
-//                    players_blue.push_back(new Power_Shooter(0,0,BLUE));
-//                    players_blue.push_back(new Shield(0,0,BLUE));
-//                    game.init(selected_map, players_red, players_blue);
-//                    game.mode = selected_mode;
+                    game.mode = selected_mode;
                     // init game in choose player state
                     *state = CHOOSE_PLAYER;
                     break;
@@ -318,23 +317,48 @@ void event_handler_choose_map(SDL_Event * event, GAME_STATE* state)
 
 void event_handler_choose_player(SDL_Event * event, GAME_STATE* state)
 {
+    // things went wrong here
+    // it should be:
+    // event -> 
+    // player_red_selection, player_blue_selection
+    // red using wasd,f and flue using arrows, rctrl
+    // if pve disable blue selection
+    // when both size >= 4 --> start game
     if (event->type == SDL_KEYDOWN) {
         switch (event->key.keysym.sym) {
             case SDLK_LEFT:
+                // blue selection
+                // if pve just ignore
                 player_selection = (player_selection - 1 + 5) % 5; // Wrap around
                 break;
             case SDLK_a:
+                // red selection
                 player_selection = (player_selection - 1 + 5) % 5; // Wrap around
                 break;
             case SDLK_RIGHT:
+                // blue selection
+                // if pve just ignore
                 player_selection = (player_selection + 1) % 5; // Wrap around
                 break;
             case SDLK_d:
+                // red selection
                 player_selection = (player_selection + 1) % 5; // Wrap around
                 break;
-            case SDLK_RETURN:
-            case SDLK_SPACE:
+            case SDLK_RCTRL:
+                // blue choosing
+                // if pvp
+                if (game.mode == PVP)
                 {
+
+                }
+                else
+                {
+                    //just ignore
+                }
+                // else pve        
+            case SDLK_f:
+                {
+                    // red choosing
                     if (is_player_red_choosing) {
                         if (red_slots[0] == 5) {
                             red_slots[0] = player_selection;
@@ -385,16 +409,50 @@ void event_handler_choose_player(SDL_Event * event, GAME_STATE* state)
                                 players_blue.push_back(new Shield(0,0,BLUE));
                             break;
                     }
-                    if (players_red.size() + players_blue.size() >= 4) {
-                        game.init(selected_map, players_red, players_blue);
-                        game.mode = selected_mode;
-                        is_player_red_choosing = true;
-                        *state = PLAYING;
-                    } else {
-                        is_player_red_choosing = !is_player_red_choosing;
-                    }
                     break;
                 }
+        }
+        if (game.mode == PVP)
+        {
+            if (players_red.size() + players_blue.size() >= 4) {
+                game.init(selected_map, players_red, players_blue);
+                game.mode = selected_mode;
+                is_player_red_choosing = true;
+                *state = PLAYING;
+            } else {
+                is_player_red_choosing = !is_player_red_choosing;
+            }
+        }
+        else // PVE
+        {
+            if (players_red.size()>= 2) /* start game */ {
+                // random blue players
+                int striker_type = random_int(0, 2);
+                int defender_type = random_int(0, 1);
+                switch(striker_type)
+                {
+                    case 0:
+                        players_blue.push_back(new Power_Shooter(0, 0, BLUE));
+                        break;
+                    case 1:
+                        players_blue.push_back(new Speeder(0, 0, BLUE));
+                        break;
+                    case 2:
+                        players_blue.push_back(new Controller(0, 0, BLUE));
+                        break;
+                }
+                switch(defender_type)
+                {
+                    case 0:
+                        players_blue.push_back(new Tackle(0, 0, BLUE));
+                        break;
+                    case 1:
+                        players_blue.push_back(new Shield(0, 0, BLUE));
+                        break;
+                }
+                game.init(selected_map, players_red, players_blue);
+                *state = PLAYING;
+            }
         }
     }
     
@@ -403,8 +461,11 @@ void event_handler_choose_player(SDL_Event * event, GAME_STATE* state)
 void event_handler_scoring(SDL_Event * event, GAME_STATE* state)
 {
     // Reset game state for new game
-    game.red.score = 0;
-    game.blue.score = 0;
+    game.cleanup();
+    red_slots[0] = 5; red_slots[1] = 5; 
+    blue_slots[0] = 5; blue_slots[1] = 5;
+    players_red.clear();
+    players_blue.clear();
 }
 
 void draw_menu(SDL_Window* window, SDL_Renderer* renderer)
@@ -534,7 +595,7 @@ void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer)
     draw_text_white("PRESS ESC TO GO BACK", SCREEN_WIDTH/2 - 130, 560, window, renderer, 0.3f);
 }
 
-void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
+void draw_choose_player(Gameplay * game, SDL_Window* window, SDL_Renderer* renderer)
 {
     // Set dark blue background
     SDL_SetRenderDrawColor(renderer, 20, 20, 60, 255);
@@ -580,6 +641,7 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
 
     static SDL_Texture * red_border = nullptr;
     static SDL_Texture * blue_border = nullptr;
+    static SDL_Texture * question_mark = nullptr;
 
     if (!power_shooter_red_texture) {
         std::ostringstream ospath;
@@ -632,23 +694,62 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
         shield_blue_texture = getTexture(window, renderer, ospath.str());
     }
 
-    if (power_shooter_red_texture && power_shooter_blue_texture) {
-        SDL_RenderCopy(renderer, is_player_red_choosing ? power_shooter_red_texture : power_shooter_blue_texture, NULL, &power_shooter_rect);
+    if (!power_shooter_icon) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "power_shooter.bmp";
+        power_shooter_icon = getTexture(window, renderer, ospath.str());
     }
-    if (speeder_red_texture && speeder_blue_texture) {
-        SDL_RenderCopy(renderer, is_player_red_choosing ? speeder_red_texture : speeder_blue_texture, NULL, &speeder_rect);
+    if (!speeder_icon) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "speeder.bmp";
+        speeder_icon = getTexture(window, renderer, ospath.str());
     }
-    if (controller_red_texture && controller_blue_texture) {
-        SDL_RenderCopy(renderer, is_player_red_choosing ? controller_red_texture : controller_blue_texture, NULL, &controller_rect);
+    if (!controller_icon) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "controller.bmp";
+        controller_icon = getTexture(window, renderer, ospath.str());
     }
-    if (tackle_red_texture && tackle_blue_texture) {
-        SDL_RenderCopy(renderer, is_player_red_choosing ? tackle_red_texture : tackle_blue_texture, NULL, &tackle_rect);
+    if (!tackle_icon) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "tackle.bmp";
+        tackle_icon = getTexture(window, renderer, ospath.str());
     }
-    if (shield_red_texture && shield_blue_texture) {
-        SDL_RenderCopy(renderer, is_player_red_choosing ? shield_red_texture : shield_blue_texture, NULL, &shield_rect);
+    if (!shield_icon) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "shield.bmp";
+        shield_icon = getTexture(window, renderer, ospath.str());
     }
 
+    if (!red_border) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "red_choose.bmp";
+        red_border = getTexture(window, renderer, ospath.str());
+    }
 
+    if (!blue_border) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "blue_choose.bmp";
+        blue_border = getTexture(window, renderer, ospath.str());
+    }
+
+    if (!question_mark) {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "question_mark.bmp";
+        question_mark = getTexture(window, renderer, ospath.str());
+    }
+
+    draw_text_white("Power Shooter", power_shooter_rect.x, power_shooter_rect.y - 40, window, renderer, 0.3f);
+    SDL_RenderCopy(renderer, power_shooter_icon, NULL, &power_shooter_rect);
+    draw_text_white("Speeder", speeder_rect.x, speeder_rect.y - 40, window, renderer, 0.3f);
+    SDL_RenderCopy(renderer, speeder_icon, NULL, &speeder_rect);
+    draw_text_white("Controller", controller_rect.x, controller_rect.y - 40, window, renderer, 0.3f);
+    SDL_RenderCopy(renderer, controller_icon, NULL, &controller_rect);
+    draw_text_white("Tackle", tackle_rect.x, tackle_rect.y - 40, window, renderer, 0.3f);
+    SDL_RenderCopy(renderer, tackle_icon, NULL, &tackle_rect);
+    draw_text_white("Shield", shield_rect.x, shield_rect.y - 40, window, renderer, 0.3f);
+    SDL_RenderCopy(renderer, shield_icon, NULL, &shield_rect);
+
+    // draw icon
     auto draw_thick_border = [&](const SDL_Rect& rect, bool selected, int thickness) {
         if (selected) {
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
@@ -661,6 +762,7 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
             SDL_RenderDrawRect(renderer, &rect);
         }
     };
+
     draw_thick_border(power_shooter_rect, player_selection == 0, 8);
     draw_thick_border(speeder_rect, player_selection == 1, 8);
     draw_thick_border(controller_rect, player_selection == 2, 8);
@@ -670,16 +772,14 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
     draw_thick_border(red_slot_2, true, 2);
     draw_thick_border(blue_slot_1, true, 2);
     draw_thick_border(blue_slot_2, true, 2);
-    
-
 
     std::string text = "v";
-    if (red_slots[0] == 5) {
+    if (red_slots[0] == 5) 
         draw_text_white(text, red_slot_1.x + 40, red_slot_1.y - 40, window, renderer, 0.5f);
-    } else if (blue_slots[0] == 5) {
-        draw_text_white(text, blue_slot_1.x + 40, blue_slot_1.y - 40, window, renderer, 0.5f);
-    } else if (red_slots[1] == 5) {
+    else if (red_slots[1] == 5) 
         draw_text_white(text, red_slot_2.x + 40, red_slot_2.y - 40, window, renderer, 0.5f);
+    if (blue_slots[0] == 5) {
+        draw_text_white(text, blue_slot_1.x + 40, blue_slot_1.y - 40, window, renderer, 0.5f);
     } else if (blue_slots[1] == 5) {
         draw_text_white(text, blue_slot_2.x + 40, blue_slot_2.y - 40, window, renderer, 0.5f);
     }
@@ -689,7 +789,7 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
             SDL_RenderCopy(renderer, power_shooter_red_texture, NULL, &red_slot_1);
             break;
         case 1:
-            SDL_RenderCopy(renderer, speeder_red_texture, NULL, &red_slot_2);
+            SDL_RenderCopy(renderer, speeder_red_texture, NULL, &red_slot_1);
             break;
         case 2:
             SDL_RenderCopy(renderer, controller_red_texture, NULL, &red_slot_1);
@@ -718,40 +818,49 @@ void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer)
             SDL_RenderCopy(renderer, shield_red_texture, NULL, &red_slot_2);
             break;
     }
-    switch (blue_slots[0]) {
-        case 0: 
-            SDL_RenderCopy(renderer, power_shooter_blue_texture, NULL, &blue_slot_1);
-            break;
-        case 1:
-            SDL_RenderCopy(renderer, speeder_blue_texture, NULL, &blue_slot_1);
-            break;
-        case 2: 
-            SDL_RenderCopy(renderer, controller_blue_texture, NULL, &blue_slot_1);
-            break;
-        case 3:
-            SDL_RenderCopy(renderer, tackle_blue_texture, NULL, &blue_slot_1);
-            break;
-        case 4:
-            SDL_RenderCopy(renderer, shield_blue_texture, NULL, &blue_slot_1);
-            break;
-        
+
+    if (game->mode == PVP)
+    {
+        switch (blue_slots[0]) {
+            case 0: 
+                SDL_RenderCopy(renderer, power_shooter_blue_texture, NULL, &blue_slot_1);
+                break;
+            case 1:
+                SDL_RenderCopy(renderer, speeder_blue_texture, NULL, &blue_slot_1);
+                break;
+            case 2: 
+                SDL_RenderCopy(renderer, controller_blue_texture, NULL, &blue_slot_1);
+                break;
+            case 3:
+                SDL_RenderCopy(renderer, tackle_blue_texture, NULL, &blue_slot_1);
+                break;
+            case 4:
+                SDL_RenderCopy(renderer, shield_blue_texture, NULL, &blue_slot_1);
+                break;
+            
+        }
+        switch (blue_slots[1]) {
+            case 0: 
+                SDL_RenderCopy(renderer, power_shooter_blue_texture, NULL, &blue_slot_2);
+                break;
+            case 1:
+                SDL_RenderCopy(renderer, speeder_blue_texture, NULL, &blue_slot_2);
+                break;
+            case 2: 
+                SDL_RenderCopy(renderer, controller_blue_texture, NULL, &blue_slot_2);
+                break;
+            case 3:
+                SDL_RenderCopy(renderer, tackle_blue_texture, NULL, &blue_slot_2);
+                break;
+            case 4:
+                SDL_RenderCopy(renderer, shield_blue_texture, NULL, &blue_slot_2);
+                break;    
+        }
     }
-    switch (blue_slots[1]) {
-        case 0: 
-            SDL_RenderCopy(renderer, power_shooter_blue_texture, NULL, &blue_slot_2);
-            break;
-        case 1:
-            SDL_RenderCopy(renderer, speeder_blue_texture, NULL, &blue_slot_2);
-            break;
-        case 2: 
-            SDL_RenderCopy(renderer, controller_blue_texture, NULL, &blue_slot_2);
-            break;
-        case 3:
-            SDL_RenderCopy(renderer, tackle_blue_texture, NULL, &blue_slot_2);
-            break;
-        case 4:
-            SDL_RenderCopy(renderer, shield_blue_texture, NULL, &blue_slot_2);
-            break;    
+    else  // PVE
+    {
+        SDL_RenderCopy(renderer, question_mark, NULL, &blue_slot_1);
+        SDL_RenderCopy(renderer, question_mark, NULL, &blue_slot_2);    
     }
 
     // Instructions at the bottom

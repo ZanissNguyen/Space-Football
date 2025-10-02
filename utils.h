@@ -48,4 +48,4 @@ private:
     static SDL_Renderer* renderer;
 };
 
-SDL_Texture * getTexture(SDL_Window* window, SDL_Renderer* renderer, std::string path);
+int random_int(int start, int end);

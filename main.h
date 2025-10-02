@@ -20,6 +20,6 @@ void event_handler_scoring(SDL_Event * event, GAME_STATE* state);
 
 void draw_menu(SDL_Window* window, SDL_Renderer* renderer);
 void draw_choose_map(SDL_Window* window, SDL_Renderer* renderer);
-void draw_choose_player(SDL_Window* window, SDL_Renderer* renderer);
+void draw_choose_player(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer);
 void draw_pause(SDL_Window* window, SDL_Renderer* renderer, int selection);
 void draw_result(SDL_Window* window, SDL_Renderer* renderer, int winner, int selection);
