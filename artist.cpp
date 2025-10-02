@@ -5,6 +5,8 @@ void draw_game(Gameplay * game, SDL_Window * window, SDL_Renderer * renderer)
 {
     draw_field(window, renderer);
 
+    draw_effect(game, window, renderer);
+
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
         bool red_active = (i == game->red.active_player);
@@ -723,4 +725,42 @@ void draw_text_white(const std::string& text, int x, int y, SDL_Window* window, 
     }
 
     // Don't destroy static texture - it's reused
+}
+
+void draw_effect(Gameplay * game, SDL_Window* window, SDL_Renderer * renderer)
+{
+    static SDL_Texture * wind_icon = nullptr;
+    static SDL_Texture * blackhole_icon = nullptr;
+
+    if (!wind_icon)
+    {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "wind.bmp";
+        wind_icon = getTexture(window, renderer, ospath.str());
+    }
+
+    if (!blackhole_icon)
+    {
+        std::ostringstream ospath;
+        ospath << IMAGE_PATH << "blackhole.bmp";
+        blackhole_icon = getTexture(window, renderer, ospath.str());
+    }
+
+    for (int i = 0; i<game->events.size(); i++)
+    {
+        Event e = game->events[i];
+        if (e.active)
+        {
+            if (e.type == Event::EVENT_TYPE::WIND)
+            {
+                SDL_Rect wind_icon_rect = {0, 0, 100, 100};
+                SDL_RenderCopy(renderer, wind_icon, NULL, &wind_icon_rect);
+            }
+            else
+            {
+                SDL_Rect blackhole_rect = {(int) e.position.x-e.radius, (int) e.position.y-e.radius, 2*e.radius, 2*e.radius};
+                SDL_RenderCopy(renderer, blackhole_icon, NULL, &blackhole_rect);
+            }
+        }
+    }
 }

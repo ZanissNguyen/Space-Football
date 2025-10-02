@@ -40,12 +40,13 @@ void Team::cleanup()
 }
 
 // ---------------- Event -----------------
-void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, Vec2 vel)
+void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int rad, Vec2 vel)
 {
     type = t;
     duration = dur;
     position = pos;
     velocity = vel;
+    radius = rad;
     start_time = 0;
     active = false;
 }
@@ -53,7 +54,7 @@ void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, Vec2 vel)
 void Event::process(Gameplay * game)
 {
     // apply event effect
-    printf("Event active: %d\n", type);
+    // printf("Event active: %d\n", type);
 
     if (type == WIND)
     {
@@ -82,7 +83,7 @@ void Event::process(Gameplay * game)
         {
             Vec2 to_bh_red = position - game->red.members[i]->position;
             float dist_red = to_bh_red.magnitude();
-            if (dist_red < 200.0f && dist_red > 5.0f)
+            if (dist_red < radius && dist_red > radius/20.0f)
             {
                 Vec2 pull_red = to_bh_red.normalize() * (200.0f - dist_red) * 1.0f;
                 game->red.members[i]->velocity += pull_red;
@@ -90,9 +91,9 @@ void Event::process(Gameplay * game)
 
             Vec2 to_bh_blue = position - game->blue.members[i]->position;
             float dist_blue = to_bh_blue.magnitude();
-            if (dist_blue < 200.0f && dist_blue > 5.0f)
+            if (dist_blue < radius && dist_blue > radius/20.0f)
             {
-                Vec2 pull_blue = to_bh_blue.normalize() * (200.0f - dist_blue) * 1.0f;
+                Vec2 pull_blue = to_bh_blue.normalize() * (radius - dist_blue) * 1.0f;
                 game->blue.members[i]->velocity += pull_blue;
             }
         }
@@ -249,7 +250,7 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
         // { random start time (3000, 180000~?), random velocity (-100, 100) .normalize }
 
         Event wind;
-        wind.init(Event::WIND, 15000, Vec2(0,0), Vec2(5.0f,5.0f)); // 15 seconds wind to right
+        wind.init(Event::WIND, 15000, Vec2(0,0), 0, Vec2(5.0f,5.0f)); // 15 seconds wind to right
         wind.start_time = 3000; // start after 10 seconds
         events.push_back(wind);
 
@@ -260,7 +261,7 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     else if (map == MOON)
     {
         Event blackhole;
-        blackhole.init(Event::BLACK_HOLE, 15000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), Vec2(0,0));
+        blackhole.init(Event::BLACK_HOLE, 15000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), 200, Vec2(0,0));
         blackhole.start_time = 3000; // start after 10 seconds
         events.push_back(blackhole);
 
