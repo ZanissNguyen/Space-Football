@@ -37,6 +37,27 @@ public:
     void cleanup();
 };
 
+class Event
+{
+public:
+    enum EVENT_TYPE
+    {
+        NONE = 0,
+        WIND,
+        BLACK_HOLE 
+    } type;
+    Uint64 duration; // in miliseconds
+    Uint64 start_time; // in miliseconds
+    Vec2 position; // for black hole
+    Vec2 velocity; // for wind
+    bool active;
+    Event()
+        : type(NONE), duration(0), start_time(0), position(Vec2(0,0)), velocity(Vec2(0,0)), active(false) {}
+    
+    void init(EVENT_TYPE t, Uint64 dur, Vec2 pos, Vec2 vel);
+    void process(Gameplay * game);
+};
+
 class Gameplay
 {
 public:
@@ -55,6 +76,8 @@ public:
     // Countdown timer for game start/restart
     float countdown_timer; // countdown from 3 to 0
     bool countdown_active; // true when countdown is running
+
+    std::vector<Event> events;
 
     void process(float delay);
     void resume_second_half(); // Resume from half time break
@@ -88,3 +111,5 @@ void process_ball_hit_border(Gameplay * game, Ball * ball);
 Player * player_hold_ball(Gameplay * game);
 Player * get_teammate(Player * player, Gameplay * game);
 Player * get_closest_opponent(Player * player, Gameplay * game);
+void process_player_hit_goalposts(Gameplay * game, Player * player);
+void process_ball_hit_goalposts(Gameplay * game, Ball * player);

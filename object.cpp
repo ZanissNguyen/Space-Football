@@ -10,8 +10,8 @@ void Ball::move(Gameplay * game, float dt)
     }
     velocity *= (1.0f - friction * dt);
 
-    if (abs(velocity.x) < 0.005) {velocity.x = 0;}
-    if (abs(velocity.y) < 0.005) {velocity.y = 0;}
+    if (abs(velocity.x) < 0.05) {velocity.x = 0;}
+    if (abs(velocity.y) < 0.05) {velocity.y = 0;}
 
     // dx = x + dv
     Vec2 new_position = position + velocity * dt;
@@ -148,8 +148,8 @@ void Player::move(Gameplay * game, float dt)
     velocity += acceleration * dt * accel_scale * movement_speed;
     velocity *= (1.0f - friction * dt);
 
-    if (abs(velocity.x) < 0.005) {velocity.x = 0;}
-    if (abs(velocity.y) < 0.005) {velocity.y = 0;}
+    if (abs(velocity.x) < 0.05) {velocity.x = 0;}
+    if (abs(velocity.y) < 0.05) {velocity.y = 0;}
 
     // Apply max speed limit
     float speed = velocity.magnitude();

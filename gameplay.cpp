@@ -39,6 +39,61 @@ void Team::cleanup()
     active_player = 0;
 }
 
+// ---------------- Event -----------------
+void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, Vec2 vel)
+{
+    type = t;
+    duration = dur;
+    position = pos;
+    velocity = vel;
+    start_time = 0;
+    active = false;
+}
+
+void Event::process(Gameplay * game)
+{
+    // apply event effect
+    printf("Event active: %d\n", type);
+
+    if (type == WIND)
+    {
+        for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+        {
+            game->red.members[i]->velocity += velocity;
+            game->blue.members[i]->velocity += velocity;
+        }
+        game->ball.velocity += velocity;
+    }
+    else if (type == BLACK_HOLE)
+    {
+        Vec2 to_blackhole = position - game->ball.position;
+        float distance = to_blackhole.magnitude();
+        if (distance < 200.0f && distance > 5.0f) // avoid singularity
+        {
+            Vec2 pull = to_blackhole.normalize() * (200.0f - distance) * 1.5f; // stronger pull when closer
+            game->ball.velocity += pull;
+        }
+        for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+        {
+            Vec2 to_bh_red = position - game->red.members[i]->position;
+            float dist_red = to_bh_red.magnitude();
+            if (dist_red < 200.0f && dist_red > 5.0f)
+            {
+                Vec2 pull_red = to_bh_red.normalize() * (200.0f - dist_red) * 1.0f;
+                game->red.members[i]->velocity += pull_red;
+            }
+
+            Vec2 to_bh_blue = position - game->blue.members[i]->position;
+            float dist_blue = to_bh_blue.magnitude();
+            if (dist_blue < 200.0f && dist_blue > 5.0f)
+            {
+                Vec2 pull_blue = to_bh_blue.normalize() * (200.0f - dist_blue) * 1.0f;
+                game->blue.members[i]->velocity += pull_blue;
+            }
+        }
+    }
+}
+
 // ---------------- Gameplay ----------------
 void Gameplay::process(float delay) {
     // Handle countdown
@@ -75,6 +130,20 @@ void Gameplay::process(float delay) {
     }
     else return;
 
+    // event handling:
+    Uint64 current_time = SDL_GetTicks64();
+    Uint64 elapsed = current_time - start_time;
+    printf("%d\n", elapsed);
+    for (int i = 0; i<events.size(); i++)
+    {
+        if (elapsed >= events[i].start_time && elapsed < events[i].start_time + events[i].duration)
+        {
+            events[i].process(this);
+            events[i].active = true;
+        }
+        else events[i].active = false; 
+    }
+
     // AI moving
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
@@ -109,8 +178,16 @@ void Gameplay::process(float delay) {
     // collision process
     // players collision
     // red vs blue
+    // player, ball vs goalpost
+    // player, ball vs border
     process_player_collision(this, red.members[0], red.members[1]);
     process_player_collision(this, blue.members[0], blue.members[1]);
+    for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+    {
+        process_player_hit_goalposts(this, red.members[i]);
+        process_player_hit_goalposts(this, blue.members[i]);
+    }
+    process_ball_hit_goalposts(this, &ball);
 
     for (int i = 0; i<red.members.size(); i++)
     {
@@ -127,7 +204,6 @@ void Gameplay::process(float delay) {
     }
     ball.move(this, delay);
 
-    
     for (int i = 0; i<NUMBER_OF_PLAYER; i++)
     {
         process_player_hit_border(this, red.members[i]);
@@ -139,6 +215,7 @@ void Gameplay::process(float delay) {
 void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::vector<Player*> blue_members)
 {
     // TODO: set team member run new_play
+    start_time = SDL_GetTicks64();
     map = init_map;
     // setup members
     red.set_team(RED);
@@ -156,6 +233,24 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     // Initialize countdown
     countdown_timer = 3.0f; // Start from 3
     countdown_active = true;
+
+    // init events
+    events.clear();
+    // if map earth, always wind, moon always blackhole
+    if (map == EARTH)
+    {
+        Event wind;
+        wind.init(Event::WIND, 15000, Vec2(0,0), Vec2(5.0f,5.0f)); // 15 seconds wind to right
+        wind.start_time = 3000; // start after 10 seconds
+        events.push_back(wind);
+    }
+    else if (map == MOON)
+    {
+        Event blackhole;
+        blackhole.init(Event::BLACK_HOLE, 15000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), Vec2(0,0));
+        blackhole.start_time = 3000; // start after 10 seconds
+        events.push_back(blackhole);
+    }
 
     // printf("assign complete!");
     new_play();
@@ -442,44 +537,47 @@ void process_player_hit_border(Gameplay * game, Player * player)
 
 void process_ball_hit_border(Gameplay * game, Ball * ball)
 {
-    Vec2 tangent(0,0);
-    bool ball_blocked = false;
-
     SDL_Rect display_rect = ball->display_rect;
     float radius = ball->radius;
-    float bounce = (game->map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
-    // position process:
-    if (display_rect.x <=0) 
-    { 
-        ball->change_x(1+radius);
-        tangent.x = 0;
-        tangent.y = 1;// vertical
+    float bounce = (game->map == MOON) ? BOUNCE_FACTOR_MOON/2.0 : BOUNCE_FACTOR_EARTH/2.0;
+
+    Vec2 normal(0,0);
+    bool ball_blocked = false;
+
+    // left border
+    if (display_rect.x <= 0) {
+        ball->change_x(1 + radius);
+        normal = Vec2(1,0); // push right
         ball_blocked = true;
     }
-    if (display_rect.y <=TOP_PADDING)
-    { 
-        ball->change_y(1+TOP_PADDING+radius); 
-        tangent.x = 0;
-        tangent.y = 1;// vertical
+    // top border
+    if (display_rect.y <= TOP_PADDING) {
+        ball->change_y(1 + TOP_PADDING + radius);
+        normal = Vec2(0,1); // push down
         ball_blocked = true;
     }
-    if (display_rect.x + radius*2 >= SCREEN_WIDTH)
-    { 
-        ball->change_x(SCREEN_WIDTH - radius-1); 
-        tangent.x = 1;
-        tangent.y = 0;// vertical
+    // right border
+    if (display_rect.x + radius*2 >= SCREEN_WIDTH) {
+        ball->change_x(SCREEN_WIDTH - radius - 1);
+        normal = Vec2(-1,0); // push left
         ball_blocked = true;
     }
-    if (display_rect.y + radius*2 >= SCREEN_HEIGHT)
-    { 
-        ball->change_y(SCREEN_HEIGHT - radius-1); 
-        tangent.x = 1;
-        tangent.y = 0;// vertical
+    // bottom border
+    if (display_rect.y + radius*2 >= SCREEN_HEIGHT) {
+        ball->change_y(SCREEN_HEIGHT - radius - 1);
+        normal = Vec2(0,-1); // push up
         ball_blocked = true;
     }
 
-    if (ball_blocked) 
-        ball->velocity = tangent * dot(ball->velocity, tangent) * -1;
+    // reflect velocity if collision happened
+    if (ball_blocked) {
+        // reflection formula: v' = v - 2*(v·n)*n
+        float dotp = dot(ball->velocity, normal);
+        ball->velocity = ball->velocity - normal * (2.0f * dotp);
+
+        // apply bounce factor
+        ball->velocity *= (1.0f - bounce);
+    }
 }
 
 Player * player_hold_ball(Gameplay * game)
@@ -566,10 +664,150 @@ void process_player_hit_goalposts(Gameplay * game, Player * player)
     int goal_top_y = TOP_PADDING + (num_y/2 - 2) * tile_size + 40;
     int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40;
 
-    SDL_Rect left_top_goal = {0, goal_top_y, tile_size, 1};
-    SDL_Rect left_bottom_goal = {0, goal_bottom_y + 1, tile_size, 1};
-    SDL_Rect right_top_goal = {SCREEN_WIDTH - tile_size, goal_top_y, tile_size, 1};
-    SDL_Rect right_bottom_goal = {SCREEN_WIDTH - tile_size, goal_bottom_y + 1, tile_size, 1};
-    
+    SDL_Rect left_top_goal = {0, goal_top_y, tile_size-20, 5};
+    SDL_Rect left_bottom_goal = {0, goal_bottom_y + 1, tile_size-20, 5};
+    SDL_Rect right_top_goal = {SCREEN_WIDTH - tile_size + 20, goal_top_y, tile_size-20, 5};
+    SDL_Rect right_bottom_goal = {SCREEN_WIDTH - tile_size + 20, goal_bottom_y + 1, tile_size-20, 5};
+
+    SDL_Rect object = {0, 0, 0, 0};
+    bool hit = false;
+
     // implement collision later
+    if (SDL_HasIntersection(&left_top_goal, &player->rect))
+    {
+        object = left_top_goal;
+        hit = true;
+    }
+
+    if (SDL_HasIntersection(&left_bottom_goal, &player->rect))
+    {
+        object = left_bottom_goal;
+        hit = true;
+    }
+
+    if (SDL_HasIntersection(&right_top_goal, &player->rect))
+    {
+        object = right_top_goal;
+        hit = true;
+    }
+
+    if (SDL_HasIntersection(&right_bottom_goal, &player->rect))
+    {
+        object = right_bottom_goal;
+        hit = true;
+    }
+
+    if (!hit) return;
+
+    SDL_Rect rect = player->rect;
+    float bounce = (game->map == MOON) ? BOUNCE_FACTOR_MOON : BOUNCE_FACTOR_EARTH;
+    // position process:
+    // printf ("%d, %d\n", rect.x, rect.y);
+    // calculate overlap distances
+    int overlapLeft   = (rect.x + rect.w) - object.x;
+    int overlapRight  = (object.x + object.w) - rect.x;
+    int overlapTop    = (rect.y + rect.h) - object.y;
+    int overlapBottom = (object.y + object.h) - rect.y;
+
+    // pick smallest overlap
+    int minOverlapX = std::min(overlapLeft, overlapRight);
+    int minOverlapY = std::min(overlapTop, overlapBottom);
+
+    if (minOverlapX < minOverlapY) {
+        // resolve on X axis
+        if (overlapLeft < overlapRight) {
+            // push player left
+            player->change_x(player->position.x - minOverlapX);
+        } else {
+            // push player right
+            player->change_x(player->position.x + minOverlapX);
+        }
+        // bounce X velocity
+        player->velocity.x = -player->velocity.x * (1 - bounce);
+    } else {
+        // resolve on Y axis
+        if (overlapTop < overlapBottom) {
+            // push player up
+            player->change_y(player->position.y - minOverlapY);
+        } else {
+            // push player down
+            player->change_y(player->position.y + minOverlapY);
+        }
+        // bounce Y velocity
+        player->velocity.y = -player->velocity.y * (1 - bounce);
+    }
+}
+
+void process_ball_hit_goalposts(Gameplay * game, Ball * ball)
+{
+    int tile_size = 64;
+    int field_height = SCREEN_HEIGHT - TOP_PADDING;
+    int num_y = field_height / tile_size;
+    int goal_top_y = TOP_PADDING + (num_y/2 - 2) * tile_size + 40;
+    int goal_bottom_y = TOP_PADDING + (num_y/2 + 2 + 1) * tile_size - 40;
+
+    SDL_Rect left_top_goal = {0, goal_top_y, tile_size-20, 5};
+    SDL_Rect left_bottom_goal = {0, goal_bottom_y + 1, tile_size-20, 5};
+    SDL_Rect right_top_goal = {SCREEN_WIDTH - tile_size + 20, goal_top_y, tile_size-20, 5};
+    SDL_Rect right_bottom_goal = {SCREEN_WIDTH - tile_size + 20, goal_bottom_y + 1, tile_size-20, 5};
+
+    SDL_Rect object = {0, 0, 0, 0};
+
+    // implement collision later
+    if (SDL_HasIntersection(&left_top_goal, &ball->display_rect))
+    {
+        object = left_top_goal;
+    }
+
+    if (SDL_HasIntersection(&left_bottom_goal, &ball->display_rect))
+    {
+        object = left_bottom_goal;
+    }
+
+    if (SDL_HasIntersection(&right_top_goal, &ball->display_rect))
+    {
+        object = right_top_goal;
+    }
+
+    if (SDL_HasIntersection(&right_bottom_goal, &ball->display_rect))
+    {
+        object = right_bottom_goal;
+    }
+
+    float cx = ball->position.x;
+    float cy = ball->position.y;
+    float r  = ball->radius;
+
+    // 1. Closest point on object
+    float closestX = clamp(cx, (float) object.x, (float) (object.x + object.w));
+    float closestY = clamp(cy, (float) object.y, (float) (object.y + object.h));
+
+    // 2. Vector from closest point to ball center
+    Vec2 delta(cx - closestX, cy - closestY);
+    float dist = delta.magnitude();
+
+    float bounce = (game->map == MOON) ? BOUNCE_FACTOR_MOON/2.0 : BOUNCE_FACTOR_EARTH/2.0;
+
+    // 3. Check collision
+    if (dist <= r*r) {
+        float dist = std::sqrt(dist);
+        Vec2 normal(delta.x, delta.y);
+
+        if (dist != 0)
+            normal = normal.normalize(); // normalize
+        else
+            normal = Vec2(1, 0); // arbitrary normal if exactly overlapping
+
+        // Push ball out (separate them)
+        float penetration = r - dist;
+        ball->change_x(cx + normal.x * penetration);
+        ball->change_y(cy + normal.y * penetration);
+
+        // reflect velocity
+        float dotp = dot(ball->velocity, normal);
+        ball->velocity = ball->velocity - normal * (2.0f * dotp);
+
+        // Apply bounce factor
+        ball->velocity *= (1.0f - bounce);
+    }
 }
