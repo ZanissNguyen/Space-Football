@@ -9,12 +9,29 @@ void Team::set_members(std::vector<Player*> players)
         }
     }
     members.clear();
-    // Add new players
+    
+    // Create NEW copies of players instead of sharing pointers
     for (int i = 0; i < players.size(); i++) {
-        members.push_back(players[i]);
+        Player* newPlayer = nullptr;
+        if (players[i]->type == "power_shooter") {
+            newPlayer = new Power_Shooter(players[i]->position.x, players[i]->position.y, players[i]->team);
+        } else if (players[i]->type == "speeder") {
+            newPlayer = new Speeder(players[i]->position.x, players[i]->position.y, players[i]->team);
+        } else if (players[i]->type == "controller") {
+            newPlayer = new Controller(players[i]->position.x, players[i]->position.y, players[i]->team);
+        } else if (players[i]->type == "tackle") {
+            newPlayer = new Tackle(players[i]->position.x, players[i]->position.y, players[i]->team);
+        } else if (players[i]->type == "shield") {
+            newPlayer = new Shield(players[i]->position.x, players[i]->position.y, players[i]->team);
+        }
+        
+        if (newPlayer != nullptr) {
+            // Copy other properties from original player (velocity will be reset in new_play())
+            newPlayer->velocity = players[i]->velocity;
+            members.push_back(newPlayer);
+        }
     }
 }
-
 void Team::set_team(TEAM_CODE t)
 {
     code = t;
@@ -40,13 +57,12 @@ void Team::cleanup()
 }
 
 // ---------------- Event -----------------
-void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int rad, Vec2 vel)
+void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, Vec2 vel)
 {
     type = t;
     duration = dur;
     position = pos;
     velocity = vel;
-    radius = rad;
     start_time = 0;
     active = false;
 }
@@ -54,49 +70,112 @@ void Event::init(EVENT_TYPE t, Uint64 dur, Vec2 pos, int rad, Vec2 vel)
 void Event::process(Gameplay * game)
 {
     // apply event effect
-    // printf("Event active: %d\n", type);
+    // printf("Event active: %d\n", type); // Commented out to reduce spam
 
     if (type == WIND)
     {
-        for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+        // Enhanced Wind Effect with visual representation
+        // Wind strength varies with time for more dynamic effect
+        float wind_intensity = 1.0f + 0.3f * sin(SDL_GetTicks() * 0.003f); // Oscillating intensity
+        Vec2 wind_force = velocity * wind_intensity;
+        
+        // Apply wind to all players with slight variation based on mass/type
+        for (int i = 0; i < NUMBER_OF_PLAYER; i++)
         {
-            game->red.members[i]->velocity += velocity;
-            game->blue.members[i]->velocity += velocity;
+            // Heavier players (defenders) are less affected by wind
+            float player_mass_factor = (game->red.members[i]->type == "tackle" || game->red.members[i]->type == "shield") ? 0.7f : 1.0f;
+            game->red.members[i]->velocity += wind_force * player_mass_factor;
+            
+            player_mass_factor = (game->blue.members[i]->type == "tackle" || game->blue.members[i]->type == "shield") ? 0.7f : 1.0f;
+            game->blue.members[i]->velocity += wind_force * player_mass_factor;
         }
-        game->ball.velocity += velocity;
+        
+        // Ball is most affected by wind
+        game->ball.velocity += wind_force * 1.2f;
+        
+        // TODO: Add wind particles/visual effects here
+        // - Wind direction arrows
+        // - Particle effects showing wind flow
+        // - Screen shake effect for strong gusts
     }
     else if (type == BLACK_HOLE)
     {
+        // Enhanced Black Hole with moderate physics for 3s event
+        const float MAX_PULL_DISTANCE = 350.0f;  // Moderate range
+        const float MIN_SAFE_DISTANCE = 8.0f;
+        const float CRITICAL_DISTANCE = 65.0f;   // Moderate critical zone
+        
+        // Black hole effect on ball
         Vec2 to_blackhole = position - game->ball.position;
         float distance = to_blackhole.magnitude();
         
-        // radius
-        // <1 <0.75 <0.5 <0.25 distance < 0.5 radius, 0.2 radius --> pull stronger
-        // 
-
-        if (distance < 200.0f && distance > 5.0f) // avoid singularity
+        if (distance < MAX_PULL_DISTANCE && distance > MIN_SAFE_DISTANCE)
         {
-            Vec2 pull = to_blackhole.normalize() * (200.0f - distance) * 1.5f; // stronger pull when closer
-            game->ball.velocity += pull;
+            // Physics: Moderate pull for 3s effect (1.5x stronger than original)
+            float pull_strength;
+            if (distance <= CRITICAL_DISTANCE) {
+                // Strong pull near center - 1.5x strength
+                pull_strength = (CRITICAL_DISTANCE - distance) * 1.2f + 22.5f;
+            } else {
+                // Weaker pull farther away - 1.5x strength
+                pull_strength = (MAX_PULL_DISTANCE - distance) / (distance * 0.067f);
+            }
+            
+            Vec2 pull_direction = to_blackhole.normalize();
+            Vec2 pull_force = pull_direction * pull_strength;
+            game->ball.velocity += pull_force;
         }
-        for (int i = 0; i<NUMBER_OF_PLAYER; i++)
+        
+        // Black hole effect on players
+        for (int i = 0; i < NUMBER_OF_PLAYER; i++)
         {
+            // Red team players
             Vec2 to_bh_red = position - game->red.members[i]->position;
             float dist_red = to_bh_red.magnitude();
-            if (dist_red < radius && dist_red > radius/20.0f)
+            
+            if (dist_red < MAX_PULL_DISTANCE && dist_red > MIN_SAFE_DISTANCE)
             {
-                Vec2 pull_red = to_bh_red.normalize() * (200.0f - dist_red) * 1.0f;
-                game->red.members[i]->velocity += pull_red;
+                float pull_strength;
+                if (dist_red <= CRITICAL_DISTANCE) {
+                    pull_strength = (CRITICAL_DISTANCE - dist_red) * 0.75f + 15.0f;  // Moderate pull (1.5x)
+                } else {
+                    pull_strength = (MAX_PULL_DISTANCE - dist_red) / (dist_red * 0.1f);  // Moderate strength (1.5x)
+                }
+                
+                // Players resist black hole based on their type - moderate resistance
+                float resistance = (game->red.members[i]->type == "tackle" || game->red.members[i]->type == "shield") ? 0.65f : 0.85f;
+                
+                Vec2 pull_direction = to_bh_red.normalize();
+                Vec2 pull_force = pull_direction * pull_strength * resistance;
+                game->red.members[i]->velocity += pull_force;
             }
-
+            
+            // Blue team players
             Vec2 to_bh_blue = position - game->blue.members[i]->position;
             float dist_blue = to_bh_blue.magnitude();
-            if (dist_blue < radius && dist_blue > radius/20.0f)
+            
+            if (dist_blue < MAX_PULL_DISTANCE && dist_blue > MIN_SAFE_DISTANCE)
             {
-                Vec2 pull_blue = to_bh_blue.normalize() * (radius - dist_blue) * 1.0f;
-                game->blue.members[i]->velocity += pull_blue;
+                float pull_strength;
+                if (dist_blue <= CRITICAL_DISTANCE) {
+                    pull_strength = (CRITICAL_DISTANCE - dist_blue) * 0.75f + 15.0f;  // Moderate pull (1.5x)
+                } else {
+                    pull_strength = (MAX_PULL_DISTANCE - dist_blue) / (dist_blue * 0.1f);  // Moderate strength (1.5x)
+                }
+                
+                float resistance = (game->blue.members[i]->type == "tackle" || game->blue.members[i]->type == "shield") ? 0.65f : 0.85f;
+                
+                Vec2 pull_direction = to_bh_blue.normalize();
+                Vec2 pull_force = pull_direction * pull_strength * resistance;
+                game->blue.members[i]->velocity += pull_force;
             }
         }
+        
+        // TODO: Add black hole visual effects here
+        // - Swirling particle effects around the black hole
+        // - Distortion effect on screen near black hole
+        // - Gravitational lensing visual effect
+        // - Warning indicators when objects get too close
     }
 }
 
@@ -139,7 +218,7 @@ void Gameplay::process(float delay) {
     // event handling:
     Uint64 current_time = SDL_GetTicks64();
     Uint64 elapsed = current_time - start_time;
-    // printf("%d\n", elapsed);
+    //printf("%d\n", elapsed);
     for (int i = 0; i<events.size(); i++)
     {
         if (elapsed >= events[i].start_time && elapsed < events[i].start_time + events[i].duration)
@@ -245,28 +324,17 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     // if map earth, always wind, moon always blackhole
     if (map == EARTH)
     {
-        // random so event
-        // for so lan ->
-        // { random start time (3000, 180000~?), random velocity (-100, 100) .normalize }
-
         Event wind;
-        wind.init(Event::WIND, 15000, Vec2(0,0), 0, Vec2(5.0f,5.0f)); // 15 seconds wind to right
-        wind.start_time = 3000; // start after 10 seconds
+        wind.init(Event::WIND, 3000, Vec2(0,0), Vec2(11.0f,11.0f)); // 3 seconds moderate wind (1.5x stronger)
+        wind.start_time = 13000; // start after countdown (3s) + 10s = 13s
         events.push_back(wind);
-
-        // random so event
-        // for so lan ->
-        // { random start time (3000, 180000~?), random radius (200 ~ 800), position.y (TOPPAG + radius ~ SCREEN_HEIGHT - radius) }
     }
     else if (map == MOON)
     {
         Event blackhole;
-        blackhole.init(Event::BLACK_HOLE, 15000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), 200, Vec2(0,0));
-        blackhole.start_time = 3000; // start after 10 seconds
+        blackhole.init(Event::BLACK_HOLE, 3000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), Vec2(0,0));
+        blackhole.start_time = 13000; // start after countdown (3s) + 10s = 13s
         events.push_back(blackhole);
-
-        // random soos blackhole ? radius? strength? random start_time?
-        // ve hieu ung cho cai event nay
     }
 
     // printf("assign complete!");
@@ -655,6 +723,7 @@ Player * get_teammate(Player * player, Gameplay * game)
             if (game->blue.members[i]!=player) return game->blue.members[i];
         }
     }
+    return nullptr;
 }
 
 Player * get_closest_opponent(Player * player, Gameplay * game)
