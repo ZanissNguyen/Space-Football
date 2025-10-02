@@ -80,6 +80,11 @@ int main(int argc, char* args[])
                             if (pause_selection == 0) {
                                 state = PLAYING;
                             } else {
+                                game.cleanup();
+                                red_slots[0] = 5; red_slots[1] = 5;
+                                blue_slots[0] = 5; blue_slots[1] = 5;
+                                players_red.clear();
+                                players_blue.clear();
                                 state = MENU;
                             }
                         }

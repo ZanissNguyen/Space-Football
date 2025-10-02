@@ -68,6 +68,11 @@ void Event::process(Gameplay * game)
     {
         Vec2 to_blackhole = position - game->ball.position;
         float distance = to_blackhole.magnitude();
+        
+        // radius
+        // <1 <0.75 <0.5 <0.25 distance < 0.5 radius, 0.2 radius --> pull stronger
+        // 
+
         if (distance < 200.0f && distance > 5.0f) // avoid singularity
         {
             Vec2 pull = to_blackhole.normalize() * (200.0f - distance) * 1.5f; // stronger pull when closer
@@ -133,7 +138,7 @@ void Gameplay::process(float delay) {
     // event handling:
     Uint64 current_time = SDL_GetTicks64();
     Uint64 elapsed = current_time - start_time;
-    printf("%d\n", elapsed);
+    // printf("%d\n", elapsed);
     for (int i = 0; i<events.size(); i++)
     {
         if (elapsed >= events[i].start_time && elapsed < events[i].start_time + events[i].duration)
@@ -239,10 +244,18 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     // if map earth, always wind, moon always blackhole
     if (map == EARTH)
     {
+        // random so event
+        // for so lan ->
+        // { random start time (3000, 180000~?), random velocity (-100, 100) .normalize }
+
         Event wind;
         wind.init(Event::WIND, 15000, Vec2(0,0), Vec2(5.0f,5.0f)); // 15 seconds wind to right
         wind.start_time = 3000; // start after 10 seconds
         events.push_back(wind);
+
+        // random so event
+        // for so lan ->
+        // { random start time (3000, 180000~?), random radius (200 ~ 800), position.y (TOPPAG + radius ~ SCREEN_HEIGHT - radius) }
     }
     else if (map == MOON)
     {
@@ -250,6 +263,9 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
         blackhole.init(Event::BLACK_HOLE, 15000, Vec2(SCREEN_WIDTH/2.0f, (SCREEN_HEIGHT-TOP_PADDING)/2.0 + TOP_PADDING), Vec2(0,0));
         blackhole.start_time = 3000; // start after 10 seconds
         events.push_back(blackhole);
+
+        // random soos blackhole ? radius? strength? random start_time?
+        // ve hieu ung cho cai event nay
     }
 
     // printf("assign complete!");
