@@ -25,6 +25,7 @@ public:
                 delete members[i];
             }
         }
+        members.clear();
     }
 
     void set_members(std::vector<Player*> players);
@@ -32,6 +33,8 @@ public:
     void set_team(TEAM_CODE t);
 
     void change_control();
+
+    void cleanup();
 };
 
 class Gameplay
@@ -69,9 +72,10 @@ public:
     // place player into position
     // place ball to center
 
-    void rematch();
-    // new play
-    // reset score, clock
+    void cleanup();
+    // remove player *
+    // reset score
+    // reset clock
 };
 
 void process_player_collision(Gameplay * game, Player * player1, Player * player2);

@@ -25,6 +25,20 @@ void Team::change_control()
     active_player = (active_player == 0) ? 1: 0;
 }
 
+void Team::cleanup()
+{
+    for (int i = 0; i<members.size(); i++)
+    {
+        if (members[i]!=nullptr)
+        {
+            delete members[i];
+        }
+    }
+    members.clear();
+    score = 0;
+    active_player = 0;
+}
+
 // ---------------- Gameplay ----------------
 void Gameplay::process(float delay) {
     // Handle countdown
@@ -173,8 +187,12 @@ void Gameplay::new_play()
     ball.place(field_width/2, 120+field_height/2);
 }
 
-void Gameplay::rematch() {
-    // TODO: reset everything for a new match
+void Gameplay::cleanup() {
+    // remove player *
+    // reset score
+    // reset clock
+    red.cleanup();
+    blue.cleanup();
 }
 
 // ---------------- Collision Functions ----------------
