@@ -68,6 +68,7 @@ public:
     Vec2 velocity;
     Vec2 acceleration;
     bool is_stunned;
+    bool is_slowed;
 
     SDL_Rect rect;
     TEAM_CODE team;
@@ -103,6 +104,7 @@ public:
         rotation_angle = 0.0; // Start facing right
         animation_time = 0.0f;
         is_moving = false;
+        is_slowed = false;
     }
 
     void place(int init_x, int init_y);

@@ -748,7 +748,7 @@ void draw_events(Gameplay* game, SDL_Window* window, SDL_Renderer* renderer)
     }
     
     Uint64 current_time = SDL_GetTicks64();
-    Uint64 elapsed = current_time - game->start_time;
+    Uint64 elapsed = current_time - game->paused_time - game->start_time;
     
     for (int i = 0; i < game->events.size(); i++)
     {

@@ -97,3 +97,8 @@ extern const int SHOOT_THRESHOLD;
 extern const int STUN_DURATION;
 extern const int SLOW_DURATION;
 extern const float SLOW_EFFECT;
+
+extern const int WIND_DURATION;
+extern const int BLACK_HOLE_DURATION;
+extern const int MAX_EVENTS;
+extern const int MIN_EVENTS;

@@ -402,9 +402,11 @@ void applySlow(void * obj)
 {
     Player * p = static_cast<Player*>(obj);
     p->movement_speed *= (1 - SLOW_EFFECT);
+    p->is_slowed = true;
 }
 void expireSlow(void * obj)
 {
     Player * p = static_cast<Player*>(obj);
     p->movement_speed /= (1 - SLOW_EFFECT);
+    p->is_slowed = false;
 }

@@ -70,6 +70,7 @@ public:
     Ball ball;
 
     Uint64 start_time;
+    Uint64 paused_time;
 
     // Timer variables for 2 halves of 90 seconds each
     int current_half; // 1 or 2

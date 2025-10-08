@@ -113,17 +113,18 @@ void Event::process(Gameplay * game)
         Vec2 to_blackhole = position - game->ball.position;
         float distance = to_blackhole.magnitude();
         
-        if (distance < MAX_PULL_DISTANCE && distance > MIN_SAFE_DISTANCE)
+        if (distance > MIN_SAFE_DISTANCE)
         {
             // Physics: Moderate pull for 3s effect (1.5x stronger than original)
             float pull_strength;
             if (distance <= CRITICAL_DISTANCE) {
                 // Strong pull near center - 1.5x strength
-                pull_strength = (CRITICAL_DISTANCE - distance) * 1.2f + 22.5f;
-            } else {
-                // Weaker pull farther away - 1.5x strength
-                pull_strength = (MAX_PULL_DISTANCE - distance) / (distance * 0.067f);
+                pull_strength = (CRITICAL_DISTANCE - distance) * 1.5f + 22.5f;
+            } else if (distance <= MAX_PULL_DISTANCE) {
+                // Weaker pull farther away
+                pull_strength = (MAX_PULL_DISTANCE - distance) / (distance * 0.067f) + 10.0f;
             }
+            else pull_strength = (distance - MAX_PULL_DISTANCE) / (distance * 0.677f) + 2.0f;
             
             Vec2 pull_direction = to_blackhole.normalize();
             Vec2 pull_force = pull_direction * pull_strength;
@@ -188,6 +189,7 @@ void Gameplay::process(float delay) {
     // Handle countdown
     if (countdown_active) {
         countdown_timer -= delay;
+        paused_time += delay * 1000;
         if (countdown_timer <= 0.0f) {
             countdown_active = false;
             // Countdown finished - game can start
@@ -221,12 +223,13 @@ void Gameplay::process(float delay) {
 
     // event handling:
     Uint64 current_time = SDL_GetTicks64();
-    Uint64 elapsed = current_time - start_time;
-    //printf("%d\n", elapsed);
+    Uint64 elapsed = current_time - paused_time - start_time;
+    // printf("%d\n", elapsed);
     for (int i = 0; i<events.size(); i++)
     {
         if (elapsed >= events[i].start_time && elapsed < events[i].start_time + events[i].duration)
         {
+            // printf("%d, %d, %d\n", elapsed, events[i].start_time, events[i].start_time + events[i].duration);
             events[i].process(this);
             events[i].active = true;
         }
@@ -305,6 +308,7 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
 {
     // TODO: set team member run new_play
     start_time = SDL_GetTicks64();
+    paused_time = 0;
     map = init_map;
     // setup members
     red.set_team(RED);
@@ -328,42 +332,42 @@ void Gameplay::init(GAME_MAP init_map, std::vector<Player*> red_members, std::ve
     // if map earth, always wind, moon always blackhole
     if (map == EARTH)
     {
-        int num_winds = random_int(1, 3);
-        int duration = 3000; // each wind lasts for 3 seconds
+        int num_winds = random_int(MIN_EVENTS, MAX_EVENTS);
+        int period = GAME_TIME / num_winds;
         for (int i = 0; i<num_winds; i++)
         {
             Event wind;
             int x = random_int(-100, 100);
             int y = random_int(-100, 100);
-            int strength = random_int(11, 30);
-            wind.init(Event::WIND, duration, Vec2(0,0), 0, Vec2(x,y), strength);
-            wind.start_time = 13000 + i*10000; // start after countdown (3s) + 10s + i*7s
+            int strength = random_int(8, 16);
+            wind.init(Event::WIND, WIND_DURATION, Vec2(0,0), 0, Vec2(x,y), strength);
+            wind.start_time = random_int(i*period, (i+1)*period);
+            printf("wind: %d - strength: %d - direction x: %d - y: %d\n", i, strength, x, y);
+            printf("start time: %ds\n", wind.start_time/1000);
             events.push_back(wind);
         }
     }
     else if (map == MOON)
     {
-        // std::vector<Event> blackholes;
-        // random number of blackhole between 1 to 3
-        int num_blackholes = random_int(1, 3);
-        // printf("%d\n", num_blackholes);
-        int duration = 3000; // each blackhole lasts for 3 seconds
+        // random number of blackhole 
+        int num_blackholes = random_int(MIN_EVENTS, MAX_EVENTS);
+        int period = GAME_TIME / num_blackholes;
         for (int i = 0; i<num_blackholes; i++)
         {
-            int radius = random_int(200, 288); // random radius between 200 to 700
-            printf("%d - %d\n", i, radius);
+            int radius = random_int(200, 288); // random radius between 200 to 288
             Event blackhole;
             int x = SCREEN_WIDTH/2;
-            int y = random_int(radius, SCREEN_HEIGHT-radius) + TOP_PADDING;
-            blackhole.init(Event::BLACK_HOLE, duration, Vec2(x,y), radius, Vec2(0,0), 0);
-            blackhole.start_time = 13000 + i*10000; // start after countdown (3s) + 10s + i*7s
+            int y = random_int(0, SCREEN_HEIGHT) + TOP_PADDING;
+            blackhole.init(Event::BLACK_HOLE, BLACK_HOLE_DURATION, Vec2(x,y), radius, Vec2(0,0), 0);
+            blackhole.start_time = random_int(i*period, (i+1)*period);
+
+            printf("Blackhole: %d - Radius: %d\n", i, radius);
+            printf("start time: %ds\n", blackhole.start_time/1000);
             events.push_back(blackhole);
         }
     }
 
-    // printf("assign complete!");
     new_play();
-    // printf("init completeeeeee");
 }
 
 void Gameplay::new_play() 
@@ -372,7 +376,6 @@ void Gameplay::new_play()
     int field_height = SCREEN_HEIGHT - 120;
 
     // TODO: place players into position and reset ball
-    // printf("start new play!");
     if (red.members.size()==2)
     {
         // printf("yes1");
@@ -469,10 +472,10 @@ void process_player_collision(Gameplay * game, Player* player1, Player* player2)
     if (!player2->is_stunned && player1->type=="tackle")
         applyStunEffect(player2);
     
-    if (player2->type=="shield")
+    if (!player1->is_slowed && player2->type=="shield")
         applySlowEffect(player1);
     
-    if (player1->type=="shield")
+    if (!player2->is_stunned && player1->type=="shield")
         applySlowEffect(player2);
 }
 

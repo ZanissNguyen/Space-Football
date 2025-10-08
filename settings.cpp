@@ -55,5 +55,10 @@ const float BOUNCE_FACTOR_MOON = 0.333f;
 
 const int SHOOT_THRESHOLD = 300;
 const int STUN_DURATION = 300; // 0.3s
-extern const int SLOW_DURATION = 750; //0.75s
-extern const float SLOW_EFFECT = 0.2;
+const int SLOW_DURATION = 600; //0.75s
+const float SLOW_EFFECT = 0.5;
+
+const int WIND_DURATION = 3000;
+const int BLACK_HOLE_DURATION = 4000;
+const int MAX_EVENTS = 8;
+const int MIN_EVENTS = 3;
